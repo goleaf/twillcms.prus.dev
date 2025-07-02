@@ -14,16 +14,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
     });
 });
 
-// Language switching API
-Route::post('/api/language/{locale}', function ($locale) {
-    if (in_array($locale, ['en', 'lt'])) {
-        session(['locale' => $locale]);
-
-        return response()->json(['success' => true, 'locale' => $locale]);
-    }
-
-    return response()->json(['success' => false], 400);
-})->name('api.language.switch');
+// Removed language switching API - Single language (English) only
 
 // SPA Catch-all route - This MUST be the last route
 // All frontend routes are handled by Vue Router

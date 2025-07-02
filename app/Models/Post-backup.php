@@ -9,6 +9,7 @@ use A17\Twill\Models\Behaviors\HasPosition;
 use A17\Twill\Models\Behaviors\HasRelated;
 use A17\Twill\Models\Behaviors\HasRevisions;
 use A17\Twill\Models\Behaviors\HasSlug;
+use A17\Twill\Models\Behaviors\HasTranslation;
 use A17\Twill\Models\Behaviors\Sortable;
 use A17\Twill\Models\Model;
 use App\Casts\MetaCast;
@@ -20,7 +21,7 @@ use Carbon\Carbon;
 
 class Post extends Model implements Sortable
 {
-    use HasBlocks, HasFactory, HasFiles, HasMedias, HasPosition, HasRelated, HasRevisions, HasSlug, HasAdvancedScopes;
+    use HasBlocks, HasFactory, HasFiles, HasMedias, HasPosition, HasRelated, HasRevisions, HasSlug, HasTranslation, HasAdvancedScopes;
 
     protected $fillable = [
         'published',
@@ -47,9 +48,17 @@ class Post extends Model implements Sortable
         'priority' => 'integer',
     ];
 
-    public $slugAttributes = [
+    public $translatedAttributes = [
         'title',
+        'description',
+        'content',
+        'active',
+        'excerpt_override',
+        'featured_image_caption',
     ];
+
+    // Disable automatic slug generation to avoid array conversion issues
+    public $slugAttributes = [];
 
     protected $appends = [
         'excerpt',
@@ -189,70 +198,73 @@ class Post extends Model implements Sortable
             return $override;
         }
 
-        return $this->author?->name ?? 'Anonymous';
+        return $this->author->name ?? 'Anonymous';
     }
 
     /**
-     * Get main image URL
+     * Get the image URL attribute
      */
     public function getImageUrlAttribute(): ?string
     {
-        return $this->image('cover');
+        return $this->image('cover', 'default');
     }
 
     /**
-     * Handle slug generation properly
+     * Set slug attribute with validation
      */
     public function setSlugAttribute($value): void
     {
-        if (is_string($value)) {
-            $this->attributes['slug'] = $value;
+        if (is_string($value) && !empty($value)) {
+            $this->attributes['slug'] = \Str::slug($value);
         }
     }
 
     /**
-     * Handle meta attribute setting with auto-generation
+     * Auto-generate meta description if not provided
      */
     public function setMetaAttribute($value): void
     {
         if (is_array($value)) {
-            // Auto-generate description if not provided
-            if (empty($value['description']) && !empty($this->content)) {
-                $value['description'] = \Str::limit(strip_tags($this->content), 155);
+            // Auto-generate meta description if not provided
+            if (empty($value['description'])) {
+                $value['description'] = $this->excerpt;
             }
             
-            // Auto-generate keywords if not provided
-            if (empty($value['keywords']) && !empty($this->title)) {
-                $value['keywords'] = collect(explode(' ', $this->title))
-                    ->filter(fn($word) => strlen($word) > 3)
-                    ->take(5)
-                    ->implode(', ');
+            // Auto-generate keywords from categories and content
+            if (empty($value['keywords'])) {
+                $keywords = $this->categories->pluck('title')->toArray();
+                $value['keywords'] = implode(', ', $keywords);
             }
         }
         
-        $this->attributes['meta'] = json_encode($value);
+        $this->attributes['meta'] = is_array($value) ? json_encode($value) : $value;
     }
 
+    // ====================
+    // CUSTOM METHODS
+    // ====================
+
     /**
-     * Get slug ensuring we have a fallback
+     * Get the slug for the current locale
      */
     public function getSlugAttribute(): string
     {
-        // If we have a direct slug attribute, use it
-        if (!empty($this->attributes['slug'])) {
-            return $this->attributes['slug'];
+        // First try to get slug for current locale
+        $slug = $this->slugs
+            ->where('locale', app()->getLocale())
+            ->where('active', true)
+            ->first();
+
+        // Fallback to any active slug
+        if (! $slug) {
+            $slug = $this->slugs->where('active', true)->first();
         }
 
-        // Generate from title as fallback
-        return \Str::slug($this->title ?? 'post-' . $this->id);
+        return $slug ? $slug->slug : 'post-'.$this->id;
     }
 
-    // ====================
-    // CUSTOM METHODS  
-    // ====================
-
     /**
-     * Increment view count
+     * Increment view count safely
      */
     public function incrementViews(): void
     {
@@ -260,35 +272,32 @@ class Post extends Model implements Sortable
     }
 
     /**
-     * Mark post as featured
+     * Mark as featured
      */
     public function markAsFeatured(bool $featured = true): void
     {
-        $settings = $this->settings ?? [];
+        $settings = $this->settings;
         $settings['is_featured'] = $featured;
-        
         $this->update(['settings' => $settings]);
     }
 
     /**
-     * Mark post as trending
+     * Mark as trending
      */
     public function markAsTrending(bool $trending = true): void
     {
-        $settings = $this->settings ?? [];
+        $settings = $this->settings;
         $settings['is_trending'] = $trending;
-        
         $this->update(['settings' => $settings]);
     }
 
     /**
-     * Mark post as breaking news
+     * Mark as breaking news
      */
     public function markAsBreaking(bool $breaking = true): void
     {
-        $settings = $this->settings ?? [];
+        $settings = $this->settings;
         $settings['is_breaking'] = $breaking;
-        
         $this->update(['settings' => $settings]);
     }
 
@@ -297,56 +306,63 @@ class Post extends Model implements Sortable
      */
     public function getRelatedPosts(int $limit = 5)
     {
-        if ($this->categories->isEmpty()) {
-            return collect();
-        }
-
+        $categoryIds = $this->categories->pluck('id');
+        
         return static::published()
-            ->whereHas('categories', function ($query) {
-                $query->whereIn('categories.id', $this->categories->pluck('id'));
-            })
             ->where('id', '!=', $this->id)
-            ->orderBy('view_count', 'desc')
+            ->whereHas('categories', function ($query) use ($categoryIds) {
+                $query->whereIn('categories.id', $categoryIds);
+            })
+            ->orderBy('published_at', 'desc')
             ->limit($limit)
             ->get();
     }
 
-    // ====================
-    // TREE MANIPULATION (Required by Twill)
-    // ====================
-
     /**
-     * Save tree structure from IDs array (required by Twill for drag-drop)
+     * Static method to handle tree reordering (required for Twill nesting functionality)
+     *
+     * @param  array  $ids
      */
     public static function saveTreeFromIds($ids): void
     {
-        if (!is_array($ids)) {
+        if (! is_array($ids)) {
             return;
         }
 
-        foreach ($ids as $position => $id) {
-            if (is_numeric($id)) {
-                static::where('id', $id)->update(['position' => $position + 1]);
-            }
+        $position = 1;
+        foreach ($ids as $id) {
+            static::where('id', $id)->update(['position' => $position]);
+            $position++;
         }
     }
 
     // ====================
-    // ADDITIONAL SCOPES
+    // QUERY SCOPES (Additional)
     // ====================
 
+    /**
+     * Scope for posts by specific author
+     */
     public function scopeByAuthor(Builder $query, $authorId): Builder
     {
         return $query->where('author_id', $authorId);
     }
 
+    /**
+     * Scope for posts with high engagement
+     */
     public function scopeHighEngagement(Builder $query, int $minViews = 100): Builder
     {
         return $query->where('view_count', '>=', $minViews);
     }
 
+    /**
+     * Scope for posts with external links
+     */
     public function scopeWithExternalUrl(Builder $query): Builder
     {
-        return $query->whereNotNull('external_url');
+        return $query->whereJsonContains('settings->external_url', function ($value) {
+            return !empty($value);
+        });
     }
 }
