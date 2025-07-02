@@ -40,6 +40,10 @@ Thumbs.db
 /storage/framework/views/*
 /storage/logs/*
 
+# Livewire Cache
+/storage/livewire-tmp/*
+/storage/framework/livewire-tmp/*
+
 # Node.js & NPM
 npm-debug.log*
 yarn-debug.log*
@@ -116,6 +120,11 @@ desktop.ini
 /.htaccess
 /.user.ini
 
+# Twill CMS Specific
+/storage/uploads/*
+/storage/twill/*
+/storage/twill_capsules/*
+
 # Package Management
 composer.phar
 /vendor/
@@ -167,3 +176,14 @@ pids
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Additional Development Files
+.php-cs-fixer.cache
+.phpunit.cache
+.phpactor.json
+.vite-dev-cache/
+
+# Security & Sensitive Files
+/auth.json
+/config/database.php.backup
+/.env.*.backup
