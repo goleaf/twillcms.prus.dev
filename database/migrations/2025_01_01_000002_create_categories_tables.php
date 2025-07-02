@@ -43,7 +43,7 @@ return new class extends Migration
         Schema::create('category_revisions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('category_id')->constrained()->onDelete('cascade');
-            $table->foreignId('user_id')->nullable()->constrained('twill_users')->onDelete('set null');
+            $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('set null');
             $table->json('payload');
             $table->timestamps();
         });

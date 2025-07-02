@@ -36,31 +36,25 @@ class CategoryControllerTest extends TestCase
             'published' => false,
         ]);
 
-        // Create posts
-        $post1 = Post::factory()->create(['published' => true, 'published_at' => now()]);
-        $post2 = Post::factory()->create(['published' => true, 'published_at' => now()]);
-        $post3 = Post::factory()->create(['published' => false]);
-
-        // Create translations for posts
-        $post1->translations()->create([
-            'locale' => 'en',
-            'active' => true,
+        // Create posts with content directly (single-language mode)
+        $post1 = Post::factory()->create([
+            'published' => true, 
+            'published_at' => now(),
             'title' => 'Post 1',
             'description' => 'Description 1',
             'content' => 'Content 1',
         ]);
 
-        $post2->translations()->create([
-            'locale' => 'en',
-            'active' => true,
+        $post2 = Post::factory()->create([
+            'published' => true, 
+            'published_at' => now(),
             'title' => 'Post 2',
             'description' => 'Description 2',
             'content' => 'Content 2',
         ]);
 
-        $post3->translations()->create([
-            'locale' => 'en',
-            'active' => true,
+        $post3 = Post::factory()->create([
+            'published' => false,
             'title' => 'Post 3',
             'description' => 'Description 3',
             'content' => 'Content 3',

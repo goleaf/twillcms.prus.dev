@@ -20,30 +20,21 @@ class CategoryFactory extends Factory
      */
     public function definition(): array
     {
+        $title = $this->faker->words(2, true);
+        
         return [
             'published' => $this->faker->boolean(90), // 90% chance of being published
+            'title' => $title,
+            'description' => $this->faker->sentence(),
             'position' => $this->faker->numberBetween(1, 50),
+            'slug' => Str::slug($title),
+            'view_count' => $this->faker->numberBetween(0, 500),
+            'sort_order' => $this->faker->numberBetween(1, 100),
+            'color_code' => $this->faker->hexColor(),
+            'icon' => $this->faker->randomElement(['📰', '🏆', '💼', '🌟', '🔥', '📈', '🎯', '💡']),
             'created_at' => $this->faker->dateTimeBetween('-1 year', 'now'),
             'updated_at' => now(),
         ];
-    }
-
-    public function configure()
-    {
-        return $this->afterCreating(function (Category $category) {
-            $title = $this->faker->words(2, true);
-            
-            // Create translation data
-            $category->translateOrNew('en')->title = $title;
-            $category->translateOrNew('en')->description = $this->faker->sentence();
-            $category->translateOrNew('en')->active = true;
-
-            $category->translateOrNew('lt')->title = $this->faker->words(2, true);
-            $category->translateOrNew('lt')->description = $this->faker->sentence();
-            $category->translateOrNew('lt')->active = true;
-
-            $category->save();
-        });
     }
 
     public function published(): static
@@ -60,21 +51,33 @@ class CategoryFactory extends Factory
         ]);
     }
 
+    public function featured(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'settings' => ['is_featured' => true],
+            'sort_order' => $this->faker->numberBetween(1, 10),
+        ]);
+    }
+
+    public function withParent(Category $parent): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'parent_id' => $parent->id,
+        ]);
+    }
+
     public function withTitle(string $title): static
     {
-        return $this->afterCreating(function (Category $category) use ($title) {
-            $category->translateOrNew('en')->title = $title;
-            $category->translateOrNew('en')->description = $this->faker->sentence();
-            $category->translateOrNew('en')->active = true;
-            $category->save();
-            
-            // Create or update slug for English
-            $category->slugs()->updateOrCreate([
-                'locale' => 'en',
-            ], [
-                'slug' => Str::slug($title),
-                'active' => true,
-            ]);
-        });
+        return $this->state(fn (array $attributes) => [
+            'title' => $title,
+            'slug' => Str::slug($title),
+        ]);
+    }
+
+    public function withColor(string $color): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'color_code' => $color,
+        ]);
     }
 }

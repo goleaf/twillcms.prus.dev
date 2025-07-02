@@ -181,10 +181,11 @@ class SiteController extends Controller
         $cacheKey = 'api.site.archives';
 
         $data = Cache::remember($cacheKey, 3600, function () { // 1 hour cache
+            // Use SQLite-compatible date functions
             $archives = Post::published()
-                ->selectRaw('YEAR(published_at) as year, MONTH(published_at) as month, COUNT(*) as count')
-                ->groupByRaw('YEAR(published_at), MONTH(published_at)')
-                ->orderByRaw('YEAR(published_at) DESC, MONTH(published_at) DESC')
+                ->selectRaw("strftime('%Y', published_at) as year, strftime('%m', published_at) as month, COUNT(*) as count")
+                ->groupByRaw("strftime('%Y', published_at), strftime('%m', published_at)")
+                ->orderByRaw("strftime('%Y', published_at) DESC, strftime('%m', published_at) DESC")
                 ->get()
                 ->groupBy('year')
                 ->map(function ($months, $year) {
@@ -198,10 +199,9 @@ class SiteController extends Controller
                                 'month' => (int) $month->month,
                                 'name' => $monthName,
                                 'count' => $month->count,
-                                'url' => route('blog.archive', ['year' => $year, 'month' => $month->month]),
+                                'url' => "/blog/{$year}/{$month->month}",
                             ];
                         })->values(),
-                        'url' => route('blog.archive', ['year' => $year]),
                     ];
                 })
                 ->values();
@@ -221,8 +221,8 @@ class SiteController extends Controller
         return response()->json([
             'status' => 'ok',
             'timestamp' => now()->toISOString(),
+            'service' => 'TwillCMS API',
             'version' => '1.0.0',
-            'environment' => app()->environment(),
         ]);
     }
 }

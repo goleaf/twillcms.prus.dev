@@ -2,15 +2,7 @@
 
 namespace App\Models;
 
-use A17\Twill\Models\Behaviors\HasBlocks;
-use A17\Twill\Models\Behaviors\HasFiles;
-use A17\Twill\Models\Behaviors\HasMedias;
-use A17\Twill\Models\Behaviors\HasPosition;
-use A17\Twill\Models\Behaviors\HasRelated;
-use A17\Twill\Models\Behaviors\HasRevisions;
-use A17\Twill\Models\Behaviors\HasSlug;
-use A17\Twill\Models\Behaviors\Sortable;
-use A17\Twill\Models\Model;
+use Illuminate\Database\Eloquent\Model;
 use App\Casts\MetaCast;
 use App\Casts\SettingsCast;
 use App\Traits\Models\HasAdvancedScopes;
@@ -18,9 +10,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Carbon\Carbon;
 
-class Post extends Model implements Sortable
+class Post extends Model
 {
-    use HasBlocks, HasFactory, HasFiles, HasMedias, HasPosition, HasRelated, HasRevisions, HasSlug, HasAdvancedScopes;
+    use HasFactory, HasAdvancedScopes;
 
     protected $fillable = [
         'published',
@@ -36,6 +28,7 @@ class Post extends Model implements Sortable
         'author_id',
         'featured_image_caption',
         'excerpt_override',
+        'slug',
     ];
 
     protected $casts = [
@@ -45,10 +38,6 @@ class Post extends Model implements Sortable
         'settings' => SettingsCast::class,
         'view_count' => 'integer',
         'priority' => 'integer',
-    ];
-
-    public $slugAttributes = [
-        'title',
     ];
 
     protected $appends = [
@@ -62,23 +51,19 @@ class Post extends Model implements Sortable
         'image_url',
     ];
 
-    public $mediasParams = [
-        'cover' => [
-            'default' => [
-                [
-                    'name' => 'default',
-                    'ratio' => 16 / 9,
-                ],
-            ],
-        ],
-    ];
-
     /**
      * Boot the model
      */
     protected static function boot()
     {
         parent::boot();
+
+        // Auto-generate slug on creating
+        static::creating(function ($post) {
+            if (empty($post->slug) && !empty($post->title)) {
+                $post->slug = \Str::slug($post->title);
+            }
+        });
 
         // Auto-increment view count on model retrieval
         static::retrieved(function ($post) {
@@ -193,11 +178,12 @@ class Post extends Model implements Sortable
     }
 
     /**
-     * Get main image URL
+     * Get main image URL (simplified without TwillCMS)
      */
     public function getImageUrlAttribute(): ?string
     {
-        return $this->image('cover');
+        // For now, return a placeholder or implement your own image handling
+        return $this->settings['image_url'] ?? null;
     }
 
     /**
@@ -208,29 +194,6 @@ class Post extends Model implements Sortable
         if (is_string($value)) {
             $this->attributes['slug'] = $value;
         }
-    }
-
-    /**
-     * Handle meta attribute setting with auto-generation
-     */
-    public function setMetaAttribute($value): void
-    {
-        if (is_array($value)) {
-            // Auto-generate description if not provided
-            if (empty($value['description']) && !empty($this->content)) {
-                $value['description'] = \Str::limit(strip_tags($this->content), 155);
-            }
-            
-            // Auto-generate keywords if not provided
-            if (empty($value['keywords']) && !empty($this->title)) {
-                $value['keywords'] = collect(explode(' ', $this->title))
-                    ->filter(fn($word) => strlen($word) > 3)
-                    ->take(5)
-                    ->implode(', ');
-            }
-        }
-        
-        $this->attributes['meta'] = json_encode($value);
     }
 
     /**
@@ -247,12 +210,20 @@ class Post extends Model implements Sortable
         return \Str::slug($this->title ?? 'post-' . $this->id);
     }
 
-    // ====================
-    // CUSTOM METHODS  
-    // ====================
+    /**
+     * Set meta data properly
+     */
+    public function setMetaAttribute($value): void
+    {
+        if (is_array($value)) {
+            $this->attributes['meta'] = json_encode($value);
+        } elseif (is_string($value)) {
+            $this->attributes['meta'] = $value;
+        }
+    }
 
     /**
-     * Increment view count
+     * Increment view count safely
      */
     public function incrementViews(): void
     {
@@ -266,8 +237,8 @@ class Post extends Model implements Sortable
     {
         $settings = $this->settings ?? [];
         $settings['is_featured'] = $featured;
-        
-        $this->update(['settings' => $settings]);
+        $this->settings = $settings;
+        $this->save();
     }
 
     /**
@@ -277,8 +248,8 @@ class Post extends Model implements Sortable
     {
         $settings = $this->settings ?? [];
         $settings['is_trending'] = $trending;
-        
-        $this->update(['settings' => $settings]);
+        $this->settings = $settings;
+        $this->save();
     }
 
     /**
@@ -288,65 +259,57 @@ class Post extends Model implements Sortable
     {
         $settings = $this->settings ?? [];
         $settings['is_breaking'] = $breaking;
-        
-        $this->update(['settings' => $settings]);
+        $this->settings = $settings;
+        $this->save();
     }
 
     /**
-     * Get related posts based on categories
+     * Get related posts
      */
     public function getRelatedPosts(int $limit = 5)
     {
-        if ($this->categories->isEmpty()) {
-            return collect();
-        }
-
+        $categoryIds = $this->categories()->pluck('id');
+        
         return static::published()
-            ->whereHas('categories', function ($query) {
-                $query->whereIn('categories.id', $this->categories->pluck('id'));
+            ->whereHas('categories', function ($query) use ($categoryIds) {
+                $query->whereIn('id', $categoryIds);
             })
             ->where('id', '!=', $this->id)
-            ->orderBy('view_count', 'desc')
             ->limit($limit)
             ->get();
     }
 
-    // ====================
-    // TREE MANIPULATION (Required by Twill)
-    // ====================
-
     /**
-     * Save tree structure from IDs array (required by Twill for drag-drop)
+     * Simplified tree saving for position
      */
     public static function saveTreeFromIds($ids): void
     {
-        if (!is_array($ids)) {
-            return;
-        }
-
         foreach ($ids as $position => $id) {
-            if (is_numeric($id)) {
-                static::where('id', $id)->update(['position' => $position + 1]);
-            }
+            static::where('id', $id)->update(['position' => $position]);
         }
     }
 
-    // ====================
-    // ADDITIONAL SCOPES
-    // ====================
-
+    /**
+     * Scope by author
+     */
     public function scopeByAuthor(Builder $query, $authorId): Builder
     {
         return $query->where('author_id', $authorId);
     }
 
+    /**
+     * Scope high engagement posts
+     */
     public function scopeHighEngagement(Builder $query, int $minViews = 100): Builder
     {
         return $query->where('view_count', '>=', $minViews);
     }
 
+    /**
+     * Scope posts with external URLs
+     */
     public function scopeWithExternalUrl(Builder $query): Builder
     {
-        return $query->whereNotNull('external_url');
+        return $query->whereNotNull('settings->external_url');
     }
 }

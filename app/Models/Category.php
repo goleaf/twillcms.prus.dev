@@ -2,11 +2,11 @@
 
 namespace App\Models;
 
-use A17\Twill\Models\Behaviors\HasPosition;
-use A17\Twill\Models\Behaviors\HasRevisions;
-use A17\Twill\Models\Behaviors\HasSlug;
-use A17\Twill\Models\Behaviors\Sortable;
-use A17\Twill\Models\Model;
+
+
+
+
+use Illuminate\Database\Eloquent\Model;
 use App\Casts\MetaCast;
 use App\Casts\SettingsCast;
 use App\Traits\Models\HasAdvancedScopes;
@@ -14,9 +14,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Builder;
 
-class Category extends Model implements Sortable
+class Category extends Model
 {
-    use HasFactory, HasPosition, HasRevisions, HasSlug, HasAdvancedScopes;
+    use HasFactory, HasAdvancedScopes;
 
     protected $fillable = [
         'published',

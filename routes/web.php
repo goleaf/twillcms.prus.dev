@@ -1,23 +1,38 @@
 <?php
 
-use App\Http\Controllers\SettingsController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AdminController;
+use App\Http\Controllers\Admin\PostController;
+use App\Http\Controllers\Admin\CategoryController;
 
-// Admin/Settings routes (keep existing Blade-based admin)
-Route::prefix('admin')->name('admin.')->group(function () {
-    Route::prefix('settings')->name('settings.')->group(function () {
-        Route::get('/', [SettingsController::class, 'index'])->name('index');
-        Route::put('/', [SettingsController::class, 'update'])->name('update');
-        Route::delete('/reset', [SettingsController::class, 'reset'])->name('reset');
-        Route::get('/export', [SettingsController::class, 'export'])->name('export');
-        Route::post('/import', [SettingsController::class, 'import'])->name('import');
-    });
-});
+/*
+|--------------------------------------------------------------------------
+| Web Routes  
+|--------------------------------------------------------------------------
+*/
 
-// Removed language switching API - Single language (English) only
+// SPA Routes - All frontend routes handled by Vue.js
+Route::get('/', function () {
+    return view('spa');
+})->name('spa.home');
 
-// SPA Catch-all route - This MUST be the last route
-// All frontend routes are handled by Vue Router
 Route::get('/{any}', function () {
     return view('spa');
-})->where('any', '^(?!admin|api).*$')->name('spa');
+})->where('any', '^(?!admin|api).*$')->name('spa.fallback');
+
+/*
+|--------------------------------------------------------------------------
+| Admin Routes (No Authentication Required)
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix('admin')->name('admin.')->group(function () {
+    // Dashboard
+    Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
+    
+    // Posts Management
+    Route::resource('posts', PostController::class);
+    
+    // Categories Management  
+    Route::resource('categories', CategoryController::class);
+});

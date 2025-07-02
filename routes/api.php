@@ -18,6 +18,31 @@ use Illuminate\Support\Facades\Route;
 
 // Health check (no rate limiting)
 Route::get('/health', [SiteController::class, 'health'])->name('api.health');
+// Language switching endpoint (single-language mode - always returns 'en')\Route::post('/language/{locale}', function ($locale) {\    // In single-language mode, we always use English\    // This endpoint exists for API compatibility but doesn't actually switch languages\    \    $validLocales = ['en', 'lt']; // Keep for API compatibility\    \    if (!in_array($locale, $validLocales)) {\        return response()->json([\            'success' => false,\            'error' => 'Invalid locale',\            'supported_locales' => $validLocales\        ], 400);\    }\    \    // Always return English as the active locale in single-language mode\    return response()->json([\        'success' => true,\        'locale' => 'en', // Fixed to English\        'message' => 'Application is in single-language mode (English)',\        'requested_locale' => $locale\    ]);\})->name('api.language.switch');\
+
+// Language switching endpoint (single-language mode - always returns 'en')
+Route::post('/language/{locale}', function ($locale) {
+    // In single-language mode, we always use English
+    // This endpoint exists for API compatibility but doesn't actually switch languages
+    
+    $validLocales = ['en', 'lt']; // Keep for API compatibility
+    
+    if (!in_array($locale, $validLocales)) {
+        return response()->json([
+            'success' => false,
+            'error' => 'Invalid locale',
+            'supported_locales' => $validLocales
+        ], 400);
+    }
+    
+    // Always return English as the active locale in single-language mode
+    return response()->json([
+        'success' => true,
+        'locale' => 'en', // Fixed to English
+        'message' => 'Application is in single-language mode (English)',
+        'requested_locale' => $locale
+    ]);
+})->name('api.language.switch');
 
 // API v1 routes
 Route::prefix('v1')->group(function () {

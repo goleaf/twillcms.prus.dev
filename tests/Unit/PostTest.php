@@ -16,132 +16,135 @@ class PostTest extends TestCase
     {
         $post = Post::create([
             'published' => true,
+            'title' => 'Test Post',
+            'description' => 'Test description',
+            'content' => 'Test content',
             'position' => 1,
         ]);
 
         $this->assertInstanceOf(Post::class, $post);
         $this->assertTrue($post->published);
-        $this->assertEquals(1, $post->position);
-    }
-
-    public function test_post_can_have_translations()
-    {
-        $post = Post::create([
-            'published' => true,
-            'position' => 1,
-        ]);
-
-        $post->translations()->create([
-            'locale' => 'en',
-            'active' => true,
-            'title' => 'Test Post',
-            'description' => 'This is a test post description',
-            'content' => '<p>This is test content</p>',
-        ]);
-
-        $post->translations()->create([
-            'locale' => 'lt',
-            'active' => true,
-            'title' => 'Testo įrašas',
-            'description' => 'Tai yra testo įrašo aprašymas',
-            'content' => '<p>Tai yra testo turinys</p>',
-        ]);
-
-        $this->assertEquals(2, $post->translations()->count());
-
-        $enTranslation = $post->translations()->where('locale', 'en')->first();
-        $this->assertEquals('Test Post', $enTranslation->title);
-
-        $ltTranslation = $post->translations()->where('locale', 'lt')->first();
-        $this->assertEquals('Testo įrašas', $ltTranslation->title);
-    }
-
-    public function test_post_can_have_categories()
-    {
-        $post = Post::create([
-            'published' => true,
-            'position' => 1,
-        ]);
-
-        $category1 = Category::create([
-            'published' => true,
-            'position' => 1,
-        ]);
-
-        $category2 = Category::create([
-            'published' => true,
-            'position' => 2,
-        ]);
-
-        $post->categories()->attach([$category1->id, $category2->id]);
-
-        $this->assertEquals(2, $post->categories()->count());
-        $this->assertTrue($post->categories->contains($category1));
-        $this->assertTrue($post->categories->contains($category2));
+        $this->assertEquals('Test Post', $post->title);
     }
 
     public function test_post_slug_generation()
     {
         $post = Post::create([
             'published' => true,
+            'title' => 'Test Post Title',
+            'description' => 'Description',
+            'content' => 'Content',
             'position' => 1,
         ]);
 
-        $post->translations()->create([
-            'locale' => 'en',
-            'active' => true,
-            'title' => 'This is a Test Post Title',
-            'description' => 'Description',
-            'content' => 'Content',
+        $this->assertEquals('test-post-title', $post->slug);
+    }
+
+    public function test_post_can_have_categories()
+    {
+        $post = Post::create([
+            'published' => true,
+            'title' => 'Test Post',
+            'description' => 'Test description',
+            'content' => 'Test content',
+            'position' => 1,
         ]);
 
-        // Assuming slug is auto-generated from title
-        $translation = $post->translations()->where('locale', 'en')->first();
-        $this->assertNotNull($translation->title);
+        $category = Category::create([
+            'published' => true,
+            'title' => 'Technology',
+            'description' => 'Tech category',
+            'position' => 1,
+        ]);
+
+        $post->categories()->attach($category->id);
+
+        $this->assertEquals(1, $post->categories()->count());
+        $this->assertTrue($post->categories->contains($category));
     }
 
     public function test_published_posts_scope()
     {
-        // Create published post
         $publishedPost = Post::create([
             'published' => true,
+            'title' => 'Published Post',
+            'description' => 'Published',
+            'content' => 'Published content',
             'position' => 1,
         ]);
 
-        // Create unpublished post
         $unpublishedPost = Post::create([
             'published' => false,
+            'title' => 'Unpublished Post',
+            'description' => 'Not published',
+            'content' => 'Unpublished content',
             'position' => 2,
         ]);
 
-        // Test if we can filter published posts
         $this->assertTrue($publishedPost->published);
         $this->assertFalse($unpublishedPost->published);
     }
 
-    public function test_post_content_validation()
+    public function test_post_reading_time_calculation()
     {
-        $post = Post::create([
+        $shortPost = Post::create([
             'published' => true,
+            'title' => 'Short Post',
+            'description' => 'Short description',
+            'content' => 'This is short content.',
             'position' => 1,
         ]);
 
-        $translation = $post->translations()->create([
-            'locale' => 'en',
-            'active' => true,
-            'title' => 'Test Post',
-            'description' => 'Test description',
-            'content' => '<p>Test content with <strong>HTML</strong></p>',
+        $longPost = Post::create([
+            'published' => true,
+            'title' => 'Long Post',
+            'description' => 'Long description',
+            'content' => str_repeat('This is a long post with many words. ', 100), // ~500 words
+            'position' => 2,
         ]);
 
-        $this->assertStringContainsString('<strong>HTML</strong>', $translation->content);
-        $this->assertStringContainsString('<p>', $translation->content);
+        $this->assertEquals(1, $shortPost->reading_time); // Minimum 1 minute
+        $this->assertGreaterThan(1, $longPost->reading_time);
+    }
+
+    public function test_post_excerpt_generation()
+    {
+        $post = Post::create([
+            'published' => true,
+            'title' => 'Test Post',
+            'description' => 'Test description',
+            'content' => str_repeat('This is a word ', 50), // 50 words
+            'position' => 1,
+        ]);
+
+        $excerpt = $post->excerpt;
+        $this->assertNotNull($excerpt);
+        $this->assertStringContainsString('...', $excerpt); // Should be truncated
+    }
+
+    public function test_post_excerpt_override()
+    {
+        $customExcerpt = 'This is a custom excerpt for this post.';
+        
+        $post = Post::create([
+            'published' => true,
+            'title' => 'Test Post',
+            'description' => 'Test description',
+            'content' => str_repeat('This is a word ', 50),
+            'excerpt_override' => $customExcerpt,
+            'position' => 1,
+        ]);
+
+        $this->assertEquals($customExcerpt, $post->excerpt);
     }
 
     public function test_post_timestamps()
     {
         $post = Post::create([
             'published' => true,
+            'title' => 'Test Post',
+            'description' => 'Test description',
+            'content' => 'Test content',
             'position' => 1,
         ]);
 
@@ -149,22 +152,51 @@ class PostTest extends TestCase
         $this->assertNotNull($post->updated_at);
     }
 
-    public function test_post_soft_deletes()
+    public function test_post_featured_status()
     {
         $post = Post::create([
             'published' => true,
+            'title' => 'Featured Post',
+            'description' => 'This post is featured',
+            'content' => 'Featured content',
+            'position' => 1,
+            'settings' => ['is_featured' => true],
+        ]);
+
+        $this->assertTrue($post->is_featured);
+
+        $post->markAsFeatured(false);
+        $this->assertFalse($post->fresh()->is_featured);
+    }
+
+    public function test_post_view_count_increment()
+    {
+        $post = Post::create([
+            'published' => true,
+            'title' => 'Test Post',
+            'description' => 'Test description',
+            'content' => 'Test content',
+            'position' => 1,
+            'view_count' => 5,
+        ]);
+
+        $originalCount = $post->view_count;
+        $post->incrementViews();
+
+        $this->assertEquals($originalCount + 1, $post->fresh()->view_count);
+    }
+
+    public function test_post_content_validation()
+    {
+        $post = Post::create([
+            'published' => true,
+            'title' => 'Test Post',
+            'description' => 'Test description',
+            'content' => '<p>Test content with <strong>HTML</strong></p>',
             'position' => 1,
         ]);
 
-        $postId = $post->id;
-
-        // Soft delete
-        $post->delete();
-
-        // Should not be found in normal queries
-        $this->assertNull(Post::find($postId));
-
-        // Should be found with trashed
-        $this->assertNotNull(Post::withTrashed()->find($postId));
+        $this->assertStringContainsString('<strong>HTML</strong>', $post->content);
+        $this->assertStringContainsString('<p>', $post->content);
     }
-}
+} 

@@ -18,33 +18,30 @@ class PostController extends BaseModuleController
 {
     protected $moduleName = 'posts';
 
-    /**
-     * This method can be used to enable/disable defaults. See setUpController in the docs for available options.
-     */
     protected function setUpController(): void
     {
         $this->enableReorder();
         $this->enableShowImage();
     }
 
-    /**
-     * See the table builder docs for more information. If you remove this method you can use the blade files.
-     * When using twill:module:make you can specify --bladeForm to use a blade form instead.
-     */
     public function getForm(TwillModelContract $model): Form
     {
         $form = parent::getForm($model);
 
         $form->add(
-            Input::make()->name('title')->label('Title')->translatable()->required()
+            Input::make()->name('title')->label('Title')->required()
         );
 
         $form->add(
-            Input::make()->name('description')->label('Description')->translatable()
+            Input::make()->name('description')->label('Description')
         );
 
         $form->add(
-            Wysiwyg::make()->name('content')->label('Content')->translatable()
+            Wysiwyg::make()->name('content')->label('Content')
+        );
+
+        $form->add(
+            Input::make()->name('excerpt_override')->label('Custom Excerpt')
         );
 
         $form->add(
@@ -52,7 +49,27 @@ class PostController extends BaseModuleController
         );
 
         $form->add(
+            Input::make()->name('featured_image_caption')->label('Image Caption')
+        );
+
+        $form->add(
+            Input::make()->name('priority')->label('Priority')->type('number')
+        );
+
+        $form->add(
+            Input::make()->name('view_count')->label('View Count')->type('number')
+        );
+
+        $form->add(
             Browser::make()->name('categories')->label('Categories')->modules([Category::class])
+        );
+
+        $form->add(
+            Input::make()->name('meta_description')->label('Meta Description')
+        );
+
+        $form->add(
+            Input::make()->name('meta_keywords')->label('Meta Keywords')
         );
 
         $form->add(
@@ -62,9 +79,6 @@ class PostController extends BaseModuleController
         return $form;
     }
 
-    /**
-     * This is an example and can be removed if no modifications are needed to the table.
-     */
     protected function additionalIndexTableColumns(): TableColumns
     {
         $table = parent::additionalIndexTableColumns();
@@ -77,16 +91,53 @@ class PostController extends BaseModuleController
             Text::make()->field('description')->title('Description')
         );
 
+        $table->add(
+            Text::make()->field('view_count')->title('Views')
+        );
+
+        $table->add(
+            Text::make()->field('priority')->title('Priority')
+        );
+
         return $table;
     }
 
-    /**
-     * Add anything you would like to have available in your module's form view
-     */
     protected function formData($request)
     {
         return [
             'categories' => app()->make(\App\Repositories\CategoryRepository::class)->listAll()->toArray(),
         ];
+    }
+
+    protected function prepareFieldsBeforeCreate($fields)
+    {
+        // Handle meta fields
+        if (isset($fields['meta_description']) || isset($fields['meta_keywords'])) {
+            $fields['meta'] = [
+                'description' => $fields['meta_description'] ?? '',
+                'keywords' => $fields['meta_keywords'] ?? '',
+            ];
+            unset($fields['meta_description'], $fields['meta_keywords']);
+        }
+
+        return parent::prepareFieldsBeforeCreate($fields);
+    }
+
+    protected function prepareFieldsBeforeUpdate($object, $fields)
+    {
+        return $this->prepareFieldsBeforeCreate($fields);
+    }
+
+    protected function previewData($item)
+    {
+        $data = parent::previewData($item);
+        
+        // Hydrate meta fields
+        if ($item->meta) {
+            $data['meta_description'] = $item->meta['description'] ?? '';
+            $data['meta_keywords'] = $item->meta['keywords'] ?? '';
+        }
+
+        return $data;
     }
 }

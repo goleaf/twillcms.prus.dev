@@ -43,10 +43,13 @@ return new class extends Migration
 
         Schema::create('post_revisions', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('post_id')->constrained()->onDelete('cascade');
-            $table->foreignId('user_id')->nullable()->constrained('twill_users')->onDelete('set null');
-            $table->json('payload');
+            $table->unsignedBigInteger('post_id')->index();
+            $table->unsignedBigInteger('user_id')->nullable()->index();
+            $table->text('payload');
             $table->timestamps();
+            
+            $table->foreign('post_id')->references('id')->on('posts')->onDelete('cascade');
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('set null');
         });
     }
 

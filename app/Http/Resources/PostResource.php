@@ -38,18 +38,16 @@ class PostResource extends JsonResource
             // Categories relationship
             'categories' => CategoryResource::collection($this->whenLoaded('categories')),
 
-            // Translation data
+            // Translation data (simplified without TwillCMS)
             'translations' => $this->when($request->has('include_translations'), function () {
-                return $this->translations->mapWithKeys(function ($translation) {
-                    return [
-                        $translation->locale => [
-                            'title' => $translation->title,
-                            'description' => $translation->description,
-                            'content' => $translation->content,
-                            'slug' => $translation->slug,
-                        ],
-                    ];
-                });
+                return [
+                    'en' => [
+                        'title' => $this->title,
+                        'description' => $this->description,
+                        'content' => $this->content,
+                        'slug' => $this->slug,
+                    ]
+                ];
             }),
 
             // Images (basic implementation)
@@ -61,11 +59,7 @@ class PostResource extends JsonResource
             }),
 
             // Reading time estimation
-            'reading_time' => $this->when($this->content, function () {
-                $wordCount = str_word_count(strip_tags($this->content));
-
-                return max(1, round($wordCount / 200)); // Assuming 200 words per minute
-            }),
+            'reading_time' => $this->reading_time,
 
             // Related posts (if loaded)
             'related_posts' => PostSummaryResource::collection($this->whenLoaded('relatedPosts')),

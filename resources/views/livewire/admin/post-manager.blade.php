@@ -541,7 +541,7 @@
                                                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"></textarea>
                                         </div>
 
-                                        <div>
+<div>
                                             <label for="metaKeywords" class="block text-sm font-medium text-gray-700">Meta Keywords</label>
                                             <input wire:model="metaKeywords" 
                                                    type="text" 
