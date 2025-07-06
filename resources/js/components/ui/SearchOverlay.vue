@@ -4,7 +4,7 @@
       <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4">
         <div class="p-6">
           <div class="flex items-center justify-between mb-4">
-            <h2 class="text-lg font-semibold text-gray-900">Search Posts</h2>
+            <h2 class="text-lg font-semibold text-gray-900">{{ $t('search.search_posts') }}</h2>
             <button
               @click="$emit('close')"
               class="text-gray-400 hover:text-gray-600 transition-colors"
@@ -15,7 +15,7 @@
           
           <input
             type="text"
-            placeholder="Search for posts..."
+            placeholder="{{ $t('search.search_placeholder') }}"
             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             v-model="searchQuery"
             @keyup.enter="performSearch"
@@ -26,7 +26,7 @@
               @click="performSearch"
               class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
-              Search
+              {{ $t('search.search_button') }}
             </button>
           </div>
         </div>

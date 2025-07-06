@@ -82,26 +82,28 @@ class PostController extends Controller
     /**
      * Get a single post by slug
      */
-    /**
-     * Get a single post by slug
-     */
     public function show(Request $request, string $slug): JsonResponse
     {
         $cacheKey = "api.post.{$slug}.".($request->has('include_translations') ? 'with_translations' : 'basic');
 
         $data = Cache::remember($cacheKey, 600, function () use ($slug, $request) { // 10 minutes cache
             $query = Post::published()
-                ->with(['categories'])
-                ->whereHas('slugs', function ($q) use ($slug) {
-                    $q->where('slug', $slug)->where('active', true);
-                });
+                ->where(function ($q) use ($slug) {
+                    $q->where('slug', $slug)
+                        ->orWhereRaw('LOWER(slug) = LOWER(?)', [$slug]);
+                })
+                ->with(['categories']);
 
-            // Include translations if requested
+            // Include translations if requested (for backward compatibility)
             if ($request->has('include_translations')) {
                 $query->with('translations');
             }
 
-            $post = $query->firstOrFail();
+            $post = $query->first();
+
+            if (! $post) {
+                return null; // Return null to indicate post not found
+            }
 
             // Get related posts (same categories, excluding current post)
             $relatedPosts = Post::published()
@@ -112,10 +114,22 @@ class PostController extends Controller
                 ->limit(3)
                 ->get();
 
-            $post->setRelation('relatedPosts', $relatedPosts);
+            // Create a new PostResource with the related posts data
+            $resource = new PostResource($post);
+            $resourceArray = $resource->toArray(request());
+            $resourceArray['related_posts'] = PostSummaryResource::collection($relatedPosts);
 
-            return new PostResource($post);
+            return $resourceArray;
         });
+
+        // Handle case when post is not found
+        if ($data === null) {
+            return response()->json([
+                'error' => 'Post not found',
+                'message' => 'The requested post could not be found.',
+                'slug' => $slug,
+            ], 404);
+        }
 
         return response()->json($data)
             ->header('Cache-Control', 'public, max-age=600') // 10 minutes browser cache

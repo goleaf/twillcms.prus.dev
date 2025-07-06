@@ -1,13 +1,13 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\AdminController;
-use App\Http\Controllers\Admin\PostController;
 use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\PostController;
+use App\Http\Controllers\AdminController;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| Web Routes  
+| Web Routes
 |--------------------------------------------------------------------------
 */
 
@@ -29,10 +29,10 @@ Route::get('/{any}', function () {
 Route::prefix('admin')->name('admin.')->group(function () {
     // Dashboard
     Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
-    
+
     // Posts Management
     Route::resource('posts', PostController::class);
-    
-    // Categories Management  
+
+    // Categories Management
     Route::resource('categories', CategoryController::class);
 });

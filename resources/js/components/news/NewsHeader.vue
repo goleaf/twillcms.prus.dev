@@ -12,7 +12,7 @@
             <span>{{ currentWeather }}</span>
           </div>
           <div class="flex items-center space-x-4">
-            <span class="font-medium">Breaking:</span>
+            <span class="font-medium">{{ $t('news.breaking') }}:</span>
             <span class="text-red-600">{{ breakingNews }}</span>
           </div>
         </div>
@@ -67,7 +67,7 @@
               @click="$emit('newsletter-signup')"
               class="hidden lg:inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors"
             >
-              Subscribe
+              {{ $t('newsletter.subscribe_now') }}
             </button>
           </div>
         </div>
@@ -96,7 +96,7 @@
           <!-- Secondary Navigation -->
           <div class="flex items-center space-x-6 text-sm text-gray-600">
             <router-link to="/archive" class="hover:text-gray-900 transition-colors">
-              Archive
+              {{ $t('archive.title') }}
             </router-link>
             <router-link to="/about" class="hover:text-gray-900 transition-colors">
               About

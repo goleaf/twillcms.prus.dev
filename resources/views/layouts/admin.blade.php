@@ -3,31 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title', 'Admin Dashboard')</title>
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <title>@yield('title', 'Admin') - {{ config('app.name') }}</title>
+    @vite(['resources/css/app.css', 'resources/js/app.ts'])
 </head>
-<body class="bg-gray-50 font-sans antialiased">
-    <div class="min-h-screen bg-gray-50">
+<body class="bg-gray-50">
+    <div class="min-h-screen">
         <!-- Navigation -->
-        <x-admin.navigation />
-        
-        <!-- Main Content -->
-        <div class="lg:pl-64">
-            <!-- Page Header -->
-            <x-admin.header>
-                @yield('header')
-            </x-admin.header>
-            
-            <!-- Flash Messages -->
-            <x-admin.flash-messages />
-            
-            <!-- Content -->
-            <main class="py-6">
-                <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    @yield('content')
+        <nav class="bg-white shadow-sm border-b border-gray-200">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-16">
+                    <div class="flex items-center space-x-8">
+                        <h1 class="text-xl font-semibold text-gray-900">
+                            <a href="{{ route('admin.dashboard') }}">Admin Panel</a>
+                        </h1>
+                        <div class="hidden md:flex space-x-4">
+                            <a href="{{ route('admin.posts.index') }}" class="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium">Posts</a>
+                            <a href="{{ route('admin.categories.index') }}" class="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium">Categories</a>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <a href="/" target="_blank" class="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium">
+                            View Site
+                        </a>
+                    </div>
                 </div>
-            </main>
-        </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+            @yield('content')
+        </main>
     </div>
 </body>
-</html>
+</html> 

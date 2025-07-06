@@ -44,6 +44,7 @@ class ImageGenerationService
         $height = 630; // Optimal for social media sharing
 
         // Create base image with gradient
+        // @phpstan-ignore-next-line
         $image = Image::canvas($width, $height);
 
         // Apply category-specific gradient
@@ -84,6 +85,7 @@ class ImageGenerationService
         $width = 800;
         $height = 400;
 
+        // @phpstan-ignore-next-line
         $image = Image::canvas($width, $height);
 
         // Apply category-specific styling

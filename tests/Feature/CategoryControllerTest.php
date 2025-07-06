@@ -14,24 +14,39 @@ class CategoryControllerTest extends TestCase
     {
         $category = Category::factory()->create([
             'published' => true,
+            'title' => 'Test Category',
         ]);
 
-        $response = $this->get(route('twill.categories.index'));
+        $response = $this->get('/api/v1/categories');
 
         $response->assertStatus(200);
-        $response->assertSee($category->name);
+        $response->assertJsonStructure([
+            'data' => [
+                '*' => [
+                    'id',
+                    'name',
+                    'slug',
+                ],
+            ],
+        ]);
     }
 
-    public function test_can_create_category()
+    public function test_can_show_individual_category()
     {
-        $response = $this->post(route('twill.categories.store'), [
-            'name' => ['en' => 'Test Category'],
+        $category = Category::factory()->create([
             'published' => true,
+            'title' => 'Test Category',
+            'slug' => 'test-category',
         ]);
 
-        $response->assertStatus(302);
-        $this->assertDatabaseHas('categories', [
-            'published' => true,
+        $response = $this->get("/api/v1/categories/{$category->slug}");
+
+        $response->assertStatus(200);
+        $response->assertJsonStructure([
+            'id',
+            'name',
+            'slug',
+            'description',
         ]);
     }
 }

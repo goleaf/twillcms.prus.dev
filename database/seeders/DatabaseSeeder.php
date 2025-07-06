@@ -7,7 +7,7 @@ use App\Models\Post;
 use Faker\Factory as Faker;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Storage;
-use Intervention\Image\ImageManagerStatic as Image;
+use Intervention\Image\Facades\Image;
 
 class DatabaseSeeder extends Seeder
 {
@@ -99,15 +99,11 @@ class DatabaseSeeder extends Seeder
                 'position' => $index + 1,
             ]);
 
-            // Create translations
-            foreach (['en', 'lt'] as $locale) {
-                $category->translations()->create([
-                    'locale' => $locale,
-                    'active' => true,
-                    'title' => $data[$locale]['title'],
-                    'description' => $data[$locale]['description'],
-                ]);
-            }
+            // Set English content directly on the category (no translations needed)
+            $category->update([
+                'title' => $data['en']['title'],
+                'description' => $data['en']['description'],
+            ]);
 
             // Generate fake image for category
             $this->generateCategoryImage($category, $data['en']['title']);
@@ -133,30 +129,15 @@ class DatabaseSeeder extends Seeder
                 'position' => $i,
             ]);
 
-            // Generate English content
+            // Generate English content directly on the post (no translations needed)
             $enTitle = $faker->sentence(rand(3, 8));
             $enDescription = $faker->paragraph(rand(2, 4));
             $enContent = $this->generateRichContent($faker);
 
-            $post->translations()->create([
-                'locale' => 'en',
-                'active' => true,
+            $post->update([
                 'title' => $enTitle,
                 'description' => $enDescription,
                 'content' => $enContent,
-            ]);
-
-            // Generate Lithuanian content
-            $ltTitle = $this->translateToLithuanian($enTitle, $faker);
-            $ltDescription = $this->translateToLithuanian($enDescription, $faker);
-            $ltContent = $this->generateRichContentLT($faker);
-
-            $post->translations()->create([
-                'locale' => 'lt',
-                'active' => true,
-                'title' => $ltTitle,
-                'description' => $ltDescription,
-                'content' => $ltContent,
             ]);
 
             // Assign random categories (1-3 categories per post)
@@ -283,6 +264,10 @@ class DatabaseSeeder extends Seeder
 
     private function generatePostImage($post, $title)
     {
+        if (! class_exists('Intervention\\Image\\ImageManagerStatic')) {
+            return 'images/placeholder.jpg';
+        }
+
         try {
             // Create a simple colored rectangle with text
             $width = 800;
@@ -310,6 +295,10 @@ class DatabaseSeeder extends Seeder
 
     private function generateCategoryImage($category, $title)
     {
+        if (! class_exists('Intervention\\Image\\ImageManagerStatic')) {
+            return 'images/placeholder.jpg';
+        }
+
         try {
             $width = 600;
             $height = 300;

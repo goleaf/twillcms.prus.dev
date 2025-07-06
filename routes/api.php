@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\CategoryController;
+use App\Http\Controllers\Api\PageController;
 use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\Api\SiteController;
 use Illuminate\Support\Facades\Route;
@@ -16,33 +17,15 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+// Simple test route
+Route::get('/test', function () {
+    return response()->json(['message' => 'API routes are working', 'time' => now()]);
+});
+
 // Health check (no rate limiting)
 Route::get('/health', [SiteController::class, 'health'])->name('api.health');
-// Language switching endpoint (single-language mode - always returns 'en')\Route::post('/language/{locale}', function ($locale) {\    // In single-language mode, we always use English\    // This endpoint exists for API compatibility but doesn't actually switch languages\    \    $validLocales = ['en', 'lt']; // Keep for API compatibility\    \    if (!in_array($locale, $validLocales)) {\        return response()->json([\            'success' => false,\            'error' => 'Invalid locale',\            'supported_locales' => $validLocales\        ], 400);\    }\    \    // Always return English as the active locale in single-language mode\    return response()->json([\        'success' => true,\        'locale' => 'en', // Fixed to English\        'message' => 'Application is in single-language mode (English)',\        'requested_locale' => $locale\    ]);\})->name('api.language.switch');\
 
-// Language switching endpoint (single-language mode - always returns 'en')
-Route::post('/language/{locale}', function ($locale) {
-    // In single-language mode, we always use English
-    // This endpoint exists for API compatibility but doesn't actually switch languages
-    
-    $validLocales = ['en', 'lt']; // Keep for API compatibility
-    
-    if (!in_array($locale, $validLocales)) {
-        return response()->json([
-            'success' => false,
-            'error' => 'Invalid locale',
-            'supported_locales' => $validLocales
-        ], 400);
-    }
-    
-    // Always return English as the active locale in single-language mode
-    return response()->json([
-        'success' => true,
-        'locale' => 'en', // Fixed to English
-        'message' => 'Application is in single-language mode (English)',
-        'requested_locale' => $locale
-    ]);
-})->name('api.language.switch');
+// Language switching endpoint removed - only English is supported
 
 // API v1 routes
 Route::prefix('v1')->group(function () {
@@ -79,11 +62,25 @@ Route::prefix('v1')->group(function () {
             ->name('show');
     });
 
+    // Pages API
+    Route::prefix('pages')->name('api.pages.')->group(function () {
+        Route::get('/', [PageController::class, 'index'])->name('index');
+        Route::get('/static', [PageController::class, 'getStaticPages'])->name('static');
+        Route::get('/{slug}', [PageController::class, 'show'])
+            ->where('slug', '[a-z0-9\-]+')
+            ->name('show');
+    });
+
 });
 
-// Translation endpoints
+// Translation endpoints (English only)
 Route::get('/site/translations/{locale}', function ($locale) {
-    $path = resource_path("lang/{$locale}.json");
+    // Only English is supported
+    if ($locale !== 'en') {
+        return response()->json(['error' => 'Only English locale is supported'], 404);
+    }
+
+    $path = resource_path('lang/en.json');
 
     if (! file_exists($path)) {
         return response()->json(['error' => 'Translation file not found'], 404);
@@ -92,10 +89,10 @@ Route::get('/site/translations/{locale}', function ($locale) {
     $translations = json_decode(file_get_contents($path), true);
 
     return response()->json([
-        'locale' => $locale,
+        'locale' => 'en',
         'translations' => $translations,
     ]);
-})->where('locale', '[a-z]{2}')->name('api.translations');
+})->where('locale', 'en')->name('api.translations');
 
 // Catch-all for undefined API routes
 Route::fallback(function () {

@@ -175,5 +175,41 @@
   "admin.edit_category": "Edit Category",
   "validation.required": "The :attribute field is required.",
   "validation.string": "The :attribute must be a string.",
-  "validation.max.string": "The :attribute may not be greater than :max characters."
+  "validation.max.string": "The :attribute may not be greater than :max characters.",
+  "home": {
+    "hero_title": "Welcome to",
+    "hero_subtitle": "Stay ahead of the curve.",
+    "articles": "Articles",
+    "categories": "Categories",
+    "readers": "Readers",
+    "coverage": "Coverage",
+    "error_title": "Something went wrong",
+    "try_again": "Try Again",
+    "latest_posts": "Latest Stories",
+    "newsletter_title": "Never Miss a Story",
+    "newsletter_subtitle": "Get the latest breaking news, expert analysis, and exclusive content delivered straight to your inbox.",
+    "subscribe": "Subscribe",
+    "total_articles": "Total Articles"
+  },
+  "newsletter": {
+    "title": "Stay in the Know",
+    "subscribe_now": "Subscribe Now",
+    "success_title": "Welcome Aboard!",
+    "success_message": "Thank you for subscribing! Check your email for a confirmation message.",
+    "continue_reading": "Continue Reading",
+    "privacy_notice": "By subscribing, you agree to our privacy policy. We respect your privacy and will never share your email address. You can unsubscribe at any time.",
+    "social_proof": "Join 10,000+ readers who trust us for their daily news",
+    "email_required": "Email address is required",
+    "email_invalid": "Please enter a valid email address",
+    "error_generic": "Something went wrong. Please try again."
+  },
+  "news": {
+    "breaking": "Breaking",
+    "trending": "Trending",
+    "read_full_story": "Read Full Story",
+    "featured_stories": "Featured Stories",
+    "latest_news": "Latest News",
+    "trending_now": "Trending Now",
+    "no_articles_found": "No articles found"
+  }
 } 

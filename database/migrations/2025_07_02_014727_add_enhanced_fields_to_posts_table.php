@@ -2,9 +2,9 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -17,30 +17,27 @@ return new class extends Migration
             // JSON fields for enhanced functionality
             $table->json('meta')->nullable()->comment('SEO and metadata information');
             $table->json('settings')->nullable()->comment('Advanced post settings');
-            
+
             // Performance and analytics fields
             $table->unsignedBigInteger('view_count')->default(0)->comment('Post view counter');
             $table->unsignedInteger('priority')->default(0)->comment('Display priority');
-            
+
             // Additional content fields
             $table->text('excerpt_override')->nullable()->comment('Custom excerpt override');
             $table->string('featured_image_caption')->nullable()->comment('Featured image caption');
-            
+
             // Author override
             $table->unsignedBigInteger('author_id')->nullable()->comment('Post author reference');
-            
+
             // Add indexes for performance
             $table->index('view_count', 'idx_posts_view_count');
             $table->index('priority', 'idx_posts_priority');
             $table->index('author_id', 'idx_posts_author_id');
             $table->index(['published', 'published_at'], 'idx_posts_published_date');
-            
-            // Add foreign key for author if users table exists
-            if (Schema::hasTable('users')) {
-                $table->foreign('author_id')->references('id')->on('users')->onDelete('set null');
-            }
+
+            // No user system - author_id is just a nullable field
         });
-        
+
         // Add indexes for JSON fields (MySQL 5.7+ and modern databases)
         if (config('database.default') === 'mysql') {
             try {
@@ -49,7 +46,7 @@ return new class extends Migration
                 DB::statement('CREATE INDEX idx_posts_settings_trending ON posts ((JSON_EXTRACT(settings, "$.is_trending")))');
             } catch (Exception $e) {
                 // Ignore if the database doesn't support JSON indexes
-                Log::info('JSON indexes not created for posts table: ' . $e->getMessage());
+                Log::info('JSON indexes not created for posts table: '.$e->getMessage());
             }
         }
     }
@@ -61,28 +58,26 @@ return new class extends Migration
     {
         Schema::table('posts', function (Blueprint $table) {
             // Drop foreign keys first
-            if (Schema::hasTable('users')) {
-                $table->dropForeign(['author_id']);
-            }
-            
+            // No foreign key to drop
+
             // Drop indexes
             $table->dropIndex('idx_posts_view_count');
             $table->dropIndex('idx_posts_priority');
             $table->dropIndex('idx_posts_author_id');
             $table->dropIndex('idx_posts_published_date');
-            
+
             // Drop columns
             $table->dropColumn([
                 'meta',
-                'settings', 
+                'settings',
                 'view_count',
                 'priority',
                 'excerpt_override',
                 'featured_image_caption',
-                'author_id'
+                'author_id',
             ]);
         });
-        
+
         // Drop JSON indexes if they exist
         if (config('database.default') === 'mysql') {
             try {

@@ -20,32 +20,64 @@ class PostFactory extends Factory
      */
     public function definition(): array
     {
-        $title = $this->faker->sentence(4);
-        $isPublished = $this->faker->boolean(80); // 80% chance of being published
-
         return [
-            'published' => $isPublished,
-            'published_at' => $isPublished ? $this->faker->dateTimeBetween('-1 year', 'now')->format('Y-m-d H:i:s') : null,
-            'title' => $title,
-            'description' => $this->faker->paragraph(2),
-            'content' => $this->faker->paragraphs(5, true),
+            'published' => $this->faker->boolean(80), // 80% chance published
+            'published_at' => $this->faker->dateTimeBetween('-6 months', 'now'),
             'position' => $this->faker->numberBetween(1, 100),
-            'slug' => Str::slug($title),
-            'view_count' => $this->faker->numberBetween(0, 1000),
-            'priority' => $this->faker->numberBetween(0, 10),
-            'excerpt_override' => $this->faker->boolean(30) ? $this->faker->paragraph(1) : null,
-            'featured_image_caption' => $this->faker->boolean(50) ? $this->faker->sentence() : null,
             'created_at' => $this->faker->dateTimeBetween('-1 year', 'now'),
             'updated_at' => now(),
         ];
     }
 
+    /**
+     * Create a published post
+     */
     public function published(): static
     {
         return $this->state(fn (array $attributes) => [
             'published' => true,
-            'published_at' => $this->faker->dateTimeBetween('-1 year', 'now')->format('Y-m-d H:i:s'),
+            'published_at' => $this->faker->dateTimeBetween('-6 months', 'now'),
         ]);
+    }
+
+    /**
+     * Create post with specific title and slug
+     */
+    public function withTitle(string $title): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'title' => $title,
+            'slug' => Str::slug($title),
+        ]);
+    }
+
+    /**
+     * Create post with categories
+     */
+    public function withCategories(array $categoryIds): static
+    {
+        return $this->afterCreating(function (Post $post) use ($categoryIds) {
+            $post->categories()->sync($categoryIds);
+        });
+    }
+
+    /**
+     * Create post with content
+     */
+    public function withContent(?string $title = null, ?string $content = null): static
+    {
+        return $this->afterCreating(function (Post $post) use ($title, $content) {
+            $postTitle = $title ?: $this->faker->sentence(4);
+            $postContent = $content ?: $this->faker->paragraphs(5, true);
+            $postDescription = $this->faker->paragraph(1);
+
+            // Set content directly on the post
+            $post->update([
+                'title' => $postTitle,
+                'content' => $postContent,
+                'description' => $postDescription,
+            ]);
+        });
     }
 
     public function unpublished(): static
@@ -77,21 +109,6 @@ class PostFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'settings' => ['is_breaking' => true],
             'priority' => 10,
-        ]);
-    }
-
-    public function withTitle(string $title): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'title' => $title,
-            'slug' => Str::slug($title),
-        ]);
-    }
-
-    public function withContent(string $content): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'content' => $content,
         ]);
     }
 }

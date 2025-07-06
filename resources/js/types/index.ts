@@ -14,7 +14,6 @@ export interface Post {
   images?: MediaItem[];
   reading_time?: number;
   related_posts?: PostSummary[];
-  translations?: Record<string, PostTranslation>;
 }
 
 export interface PostSummary {
@@ -41,12 +40,7 @@ export interface PostMeta {
   og_image?: string;
 }
 
-export interface PostTranslation {
-  title: string;
-  description: string;
-  content: string;
-  slug: string;
-}
+
 
 export interface Category {
   id: number;
@@ -65,7 +59,6 @@ export interface Category {
     meta: PaginationMeta;
     links: PaginationLinks;
   };
-  translations?: Record<string, CategoryTranslation>;
   image?: MediaItem;
 }
 
@@ -82,11 +75,7 @@ export interface CategoryMeta {
   canonical_url: string;
 }
 
-export interface CategoryTranslation {
-  name: string;
-  description: string;
-  slug: string;
-}
+
 
 export interface MediaItem {
   id?: number;
@@ -132,7 +121,6 @@ export interface SiteConfig {
     description: string;
     url: string;
     locale: string;
-    available_locales: string[];
     timezone: string;
   };
   meta: {
@@ -148,7 +136,6 @@ export interface SiteConfig {
     search: boolean;
     categories: boolean;
     archives: boolean;
-    translations: boolean;
     rss: boolean;
   };
 }
@@ -252,18 +239,4 @@ export interface SearchForm {
   category: string;
 }
 
-// Translation types
-export interface Translations {
-  common: Record<string, string>;
-  navigation: Record<string, string>;
-  blog: Record<string, string>;
-  search: Record<string, string>;
-  categories: Record<string, string>;
-  pagination: Record<string, string>;
-  meta: Record<string, string>;
-}
-
-export interface TranslationResponse {
-  locale: string;
-  translations: Translations;
-} 
+ 

@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Str;
 
 class PostSummaryResource extends JsonResource
 {
@@ -26,11 +27,7 @@ class PostSummaryResource extends JsonResource
             'meta' => [
                 'url' => "/blog/{$this->slug}",
                 'api_url' => url("/api/v1/posts/{$this->slug}"),
-                'reading_time' => $this->when($this->content, function () {
-                    $wordCount = str_word_count(strip_tags($this->content));
-
-                    return max(1, round($wordCount / 200));
-                }),
+                'reading_time' => $this->content ? max(1, round(str_word_count(strip_tags($this->content)) / 200)) : 1,
             ],
 
             // Categories (lightweight)
@@ -51,10 +48,8 @@ class PostSummaryResource extends JsonResource
                 'alt' => $this->title,
             ],
 
-            // Excerpt for listings (first 150 chars of content)
-            'excerpt' => $this->when($this->content, function () {
-                return \Str::limit(strip_tags($this->content), 150);
-            }),
+            // Excerpt for listings (first 150 chars of content or fallback to description)
+            'excerpt' => $this->content ? \Illuminate\Support\Str::limit(strip_tags($this->content), 150) : \Illuminate\Support\Str::limit(strip_tags($this->description), 150),
         ];
     }
 }

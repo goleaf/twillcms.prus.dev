@@ -53,22 +53,22 @@ return new class extends Migration
         $indexes = [
             'posts' => [
                 'idx_posts_published_created',
-                'idx_posts_position', 
+                'idx_posts_position',
                 'idx_posts_published_position',
                 'idx_posts_created_at',
                 'idx_posts_updated_at',
                 'idx_posts_publish_dates',
                 'idx_posts_featured',
-                'idx_posts_search'
+                'idx_posts_search',
             ],
             'categories' => [
-                'idx_categories_published_position'
+                'idx_categories_published_position',
             ],
             'post_category' => [
                 'idx_post_category_post',
                 'idx_post_category_category',
-                'idx_post_category_composite'
-            ]
+                'idx_post_category_composite',
+            ],
         ];
 
         foreach ($indexes as $table => $tableIndexes) {

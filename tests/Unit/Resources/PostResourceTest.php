@@ -7,13 +7,14 @@ use App\Models\Category;
 use App\Models\Post;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
+use PHPUnit\Framework\Attributes\Test as TestMethod;
 use Tests\TestCase;
 
 class PostResourceTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** @test */
+    #[TestMethod]
     public function it_transforms_post_correctly()
     {
         $category = Category::create([
@@ -57,7 +58,7 @@ class PostResourceTest extends TestCase
         $this->assertGreaterThan(0, $data['reading_time']);
     }
 
-    /** @test */
+    #[TestMethod]
     public function it_includes_categories_when_loaded()
     {
         $category = Category::create([
@@ -75,7 +76,7 @@ class PostResourceTest extends TestCase
             'published_at' => now()->subDay(),
             'position' => 1,
         ]);
-        
+
         $post->categories()->attach($category);
         $post->load('categories');
 
@@ -88,7 +89,7 @@ class PostResourceTest extends TestCase
         $this->assertEquals('Technology', $data['categories'][0]['title']);
     }
 
-    /** @test */
+    #[TestMethod]
     public function it_includes_translations_when_requested()
     {
         $post = Post::create([
@@ -108,7 +109,7 @@ class PostResourceTest extends TestCase
         $this->assertIsArray($data);
     }
 
-    /** @test */
+    #[TestMethod]
     public function it_handles_null_content_for_reading_time()
     {
         $post = Post::create([
@@ -126,7 +127,7 @@ class PostResourceTest extends TestCase
         $this->assertEquals(1, $data['reading_time']); // Minimum 1 minute
     }
 
-    /** @test */
+    #[TestMethod]
     public function it_includes_related_posts_when_loaded()
     {
         $post = Post::create([

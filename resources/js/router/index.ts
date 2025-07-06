@@ -3,14 +3,13 @@ import type { RouteRecordRaw } from 'vue-router';
 import { useSiteStore } from '@/stores/site';
 
 // Lazy load components for better performance
-const Home = () => import('@/views/Home.vue');
-const BlogIndex = () => import('@/views/BlogIndex.vue');
-const BlogPost = () => import('@/views/BlogPost.vue');
-const Category = () => import('@/views/Category.vue');
-const CategoryIndex = () => import('@/views/CategoryIndex.vue');
-const Search = () => import('@/views/Search.vue');
-const Archive = () => import('@/views/Archive.vue');
-const NotFound = () => import('@/views/NotFound.vue');
+const Home = () => import('@/components/pages/Home.vue');
+const PostDetail = () => import('@/components/pages/PostDetail.vue');
+const CategoryDetail = () => import('@/components/pages/CategoryDetail.vue');
+const CategoriesIndex = () => import('@/components/pages/CategoriesIndex.vue');
+const SearchResults = () => import('@/components/pages/SearchResults.vue');
+const ArchiveIndex = () => import('@/components/pages/ArchiveIndex.vue');
+const NotFound = () => import('@/components/pages/NotFound.vue');
 
 const routes: RouteRecordRaw[] = [
   {
@@ -19,67 +18,54 @@ const routes: RouteRecordRaw[] = [
     component: Home,
     meta: {
       title: 'Home',
-      description: 'Welcome to our blog',
+      description: 'Welcome to our news portal',
     },
   },
   {
-    path: '/blog',
-    name: 'blog.index',
-    component: BlogIndex,
-    meta: {
-      title: 'Blog',
-      description: 'Latest blog posts and articles',
-    },
-  },
-  {
-    path: '/blog/:slug',
-    name: 'blog.post',
-    component: BlogPost,
+    path: '/post/:slug',
+    name: 'post.detail',
+    component: PostDetail,
     props: true,
     meta: {
-      title: 'Blog Post',
-      description: 'Read our latest blog post',
+      title: 'Article',
+      description: 'Read our latest article',
     },
   },
   {
     path: '/categories',
     name: 'categories.index',
-    component: CategoryIndex,
+    component: CategoriesIndex,
     meta: {
       title: 'Categories',
-      description: 'Browse all blog categories',
+      description: 'Browse all news categories',
     },
   },
   {
     path: '/category/:slug',
-    name: 'category.show',
-    component: Category,
+    name: 'category.detail',
+    component: CategoryDetail,
     props: true,
     meta: {
       title: 'Category',
-      description: 'Posts in this category',
+      description: 'Articles in this category',
     },
   },
   {
     path: '/search',
     name: 'search',
-    component: Search,
+    component: SearchResults,
     meta: {
       title: 'Search',
-      description: 'Search blog posts',
+      description: 'Search articles',
     },
   },
   {
-    path: '/archive/:year(\\d{4})/:month(\\d{1,2})?',
-    name: 'archive',
-    component: Archive,
-    props: route => ({
-      year: parseInt(route.params.year as string),
-      month: route.params.month ? parseInt(route.params.month as string) : undefined,
-    }),
+    path: '/archives',
+    name: 'archives',
+    component: ArchiveIndex,
     meta: {
-      title: 'Archive',
-      description: 'Blog post archive',
+      title: 'Archives',
+      description: 'Article archives',
     },
   },
   {

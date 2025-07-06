@@ -19,7 +19,7 @@ class MetaCast implements CastsAttributes
         }
 
         $decoded = json_decode($value, true);
-        
+
         return is_array($decoded) ? $decoded : [];
     }
 
@@ -44,4 +44,4 @@ class MetaCast implements CastsAttributes
 
         return json_encode($value);
     }
-} 
+}

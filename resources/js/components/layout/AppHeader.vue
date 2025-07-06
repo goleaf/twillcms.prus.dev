@@ -98,45 +98,23 @@
             <MagnifyingGlassIcon class="h-5 w-5" />
           </button>
 
-          <!-- Language Switcher -->
-          <div class="relative">
-            <button
-              @click="toggleLanguageDropdown"
-              class="flex items-center p-2 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200"
-              :aria-label="t('navigation.language')"
+          <!-- About & Contact Links (Desktop) -->
+          <div class="hidden md:flex items-center space-x-1">
+            <router-link
+              to="/about"
+              class="px-3 py-2 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 font-medium"
+              :class="{ 'text-blue-600 bg-blue-50': $route.name === 'about' }"
             >
-              <LanguageIcon class="h-5 w-5" />
-              <span class="ml-1 text-sm font-medium uppercase">{{ currentLocale }}</span>
-            </button>
+              {{ t('navigation.about') }}
+            </router-link>
             
-            <transition
-              enter-active-class="transition ease-out duration-200"
-              enter-from-class="opacity-0 translate-y-1"
-              enter-to-class="opacity-100 translate-y-0"
-              leave-active-class="transition ease-in duration-150"
-              leave-from-class="opacity-100 translate-y-0"
-              leave-to-class="opacity-0 translate-y-1"
+            <router-link
+              to="/contact"
+              class="px-3 py-2 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 font-medium"
+              :class="{ 'text-blue-600 bg-blue-50': $route.name === 'contact' }"
             >
-              <div
-                v-if="showLanguageDropdown"
-                class="absolute right-0 mt-2 w-32 bg-white rounded-xl shadow-lg ring-1 ring-black ring-opacity-5 border border-gray-100"
-              >
-                <div class="py-2">
-                  <button
-                    v-for="locale in availableLocales"
-                    :key="locale"
-                    @click="switchLanguage(locale)"
-                    class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                    :class="{ 'bg-blue-50 text-blue-600 font-medium': locale === currentLocale }"
-                  >
-                    <span class="flex items-center justify-between">
-                      <span>{{ getLanguageName(locale) }}</span>
-                      <span class="text-xs uppercase font-mono">{{ locale }}</span>
-                    </span>
-                  </button>
-                </div>
-              </div>
-            </transition>
+              {{ t('navigation.contact') }}
+            </router-link>
           </div>
 
           <!-- Mobile Menu Button -->
@@ -207,24 +185,25 @@
               </router-link>
             </div>
 
-            <!-- Mobile Language Switcher -->
-            <div class="pt-4 border-t border-gray-200">
-              <div class="flex items-center justify-between px-3 py-2">
-                <span class="text-sm font-medium text-gray-700">{{ t('navigation.language') }}</span>
-                <div class="flex space-x-2">
-                  <button
-                    v-for="locale in availableLocales"
-                    :key="locale"
-                    @click="switchLanguage(locale)"
-                    class="px-3 py-1 text-sm rounded-lg transition-all duration-200"
-                    :class="locale === currentLocale 
-                      ? 'bg-blue-100 text-blue-600 font-medium' 
-                      : 'text-gray-600 hover:bg-gray-100'"
-                  >
-                    {{ locale.toUpperCase() }}
-                  </button>
-                </div>
-              </div>
+            <!-- Mobile About & Contact Links -->
+            <div class="pt-4 border-t border-gray-200 space-y-2">
+              <router-link
+                to="/about"
+                class="flex items-center px-3 py-3 text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200"
+                @click="closeMobileMenu"
+              >
+                <UserIcon class="h-5 w-5 mr-3" />
+                {{ t('navigation.about') }}
+              </router-link>
+              
+              <router-link
+                to="/contact"
+                class="flex items-center px-3 py-3 text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200"
+                @click="closeMobileMenu"
+              >
+                <EnvelopeIcon class="h-5 w-5 mr-3" />
+                {{ t('navigation.contact') }}
+              </router-link>
             </div>
           </div>
         </div>
@@ -237,7 +216,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { useSiteStore } from '@/stores/site';
 import { useCategoryStore } from '@/stores/category';
 import { useTranslations } from '@/composables/useTranslations';
@@ -247,37 +226,27 @@ import {
   Bars3Icon,
   XMarkIcon,
   ChevronDownIcon,
-  LanguageIcon,
   HomeIcon,
   DocumentTextIcon,
   FolderIcon,
+  UserIcon,
+  EnvelopeIcon,
 } from '@heroicons/vue/24/outline';
 
 const siteStore = useSiteStore();
 const categoryStore = useCategoryStore();
-const { t, currentLocale, availableLocales, setLocale } = useTranslations();
+const { t } = useTranslations();
 
 const showMobileMenu = ref(false);
 const showCategoriesDropdown = ref(false);
-const showLanguageDropdown = ref(false);
 const showSearch = ref(false);
 const categoriesDropdown = ref<HTMLElement>();
-
-// Language names mapping
-const getLanguageName = (locale: string): string => {
-  const names: Record<string, string> = {
-    'en': 'English',
-    'lt': 'Lietuvių',
-  };
-  return names[locale] || locale.toUpperCase();
-};
 
 // Mobile menu handlers
 const toggleMobileMenu = () => {
   showMobileMenu.value = !showMobileMenu.value;
   if (showMobileMenu.value) {
     showCategoriesDropdown.value = false;
-    showLanguageDropdown.value = false;
   }
 };
 
@@ -288,7 +257,6 @@ const closeMobileMenu = () => {
 // Categories dropdown handlers
 const toggleCategoriesDropdown = () => {
   showCategoriesDropdown.value = !showCategoriesDropdown.value;
-  showLanguageDropdown.value = false;
   showMobileMenu.value = false;
 };
 
@@ -296,25 +264,11 @@ const closeCategoriesDropdown = () => {
   showCategoriesDropdown.value = false;
 };
 
-// Language dropdown handlers
-const toggleLanguageDropdown = () => {
-  showLanguageDropdown.value = !showLanguageDropdown.value;
-  showCategoriesDropdown.value = false;
-  showMobileMenu.value = false;
-};
-
-const switchLanguage = async (locale: string) => {
-  await setLocale(locale);
-  showLanguageDropdown.value = false;
-  showMobileMenu.value = false;
-};
-
 // Search handlers
 const toggleSearch = () => {
   showSearch.value = !showSearch.value;
   showMobileMenu.value = false;
   showCategoriesDropdown.value = false;
-  showLanguageDropdown.value = false;
 };
 
 const closeSearch = () => {
@@ -332,7 +286,6 @@ const handleClickOutside = (event: Event) => {
 const closeAllDropdowns = () => {
   showMobileMenu.value = false;
   showCategoriesDropdown.value = false;
-  showLanguageDropdown.value = false;
   showSearch.value = false;
 };
 

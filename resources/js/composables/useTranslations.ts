@@ -1,30 +1,59 @@
 import { ref, computed } from 'vue';
-import { apiClient } from '@/api/client';
 
-interface Translations {
-  [key: string]: any;
-}
-
-const translations = ref<Translations>({});
-const currentLocale = ref<string>('en');
-const availableLocales = ref<string[]>(['en', 'lt']);
-const loading = ref<boolean>(false);
+// Static English translations
+const staticTranslations = {
+  navigation: {
+    home: 'Home',
+    blog: 'Blog',
+    categories: 'Categories',
+    search: 'Search',
+    menu: 'Menu',
+    about: 'About',
+    contact: 'Contact'
+  },
+  categories: {
+    view_all_categories: 'All Categories'
+  },
+  common: {
+    read_more: 'Read More',
+    loading: 'Loading...',
+    error: 'Error',
+    no_results: 'No results found'
+  },
+  blog: {
+    recent_posts: 'Recent Posts',
+    popular_posts: 'Popular Posts',
+    posted_on: 'Posted on',
+    by_author: 'By',
+    read_time: 'min read',
+    share: 'Share'
+  },
+  search: {
+    placeholder: 'Search articles...',
+    results: 'Search Results',
+    no_results: 'No articles found matching your search.'
+  }
+};
 
 export function useTranslations() {
+  // Simple translation function that uses static English translations
   const t = (key: string, params: Record<string, any> = {}): string => {
     const keys = key.split('.');
-    let value = translations.value;
+    let value: any = staticTranslations;
     
     for (const k of keys) {
       if (value && typeof value === 'object' && k in value) {
         value = value[k];
       } else {
-        return key; // Return key if translation not found
+        // Return a user-friendly fallback instead of the key
+        const fallback = key.split('.').pop() || key;
+        return fallback.charAt(0).toUpperCase() + fallback.slice(1).replace(/_/g, ' ');
       }
     }
     
     if (typeof value !== 'string') {
-      return key;
+      const fallback = key.split('.').pop() || key;
+      return fallback.charAt(0).toUpperCase() + fallback.slice(1).replace(/_/g, ' ');
     }
     
     // Replace parameters
@@ -36,64 +65,22 @@ export function useTranslations() {
     return result;
   };
 
-  const setLocale = async (locale: string): Promise<void> => {
-    if (!availableLocales.value.includes(locale)) {
-      console.warn(`Locale ${locale} is not available`);
-      return;
-    }
-    
-    currentLocale.value = locale;
-    await loadTranslations(locale);
+  // No-op locale functions for API compatibility
+  const setLocale = async (_locale: string): Promise<void> => {
+    // Only English is supported, so this is a no-op
   };
 
-  const loadTranslations = async (locale: string = currentLocale.value): Promise<void> => {
-    if (translations.value[locale]) {
-      return; // Already loaded
-    }
-    
-    loading.value = true;
-    try {
-      const data = await apiClient.get(`/site/translations/${locale}`);
-      translations.value[locale] = data.translations;
-    } catch (error) {
-      console.error(`Failed to load translations for locale ${locale}:`, error);
-      // Fallback to English if available
-      if (locale !== 'en' && !translations.value.en) {
-        await loadTranslations('en');
-      }
-    } finally {
-      loading.value = false;
-    }
-  };
-
-  const getCurrentTranslations = computed(() => {
-    return translations.value[currentLocale.value] || {};
-  });
-
-  // Initialize with default locale
   const initialize = async (): Promise<void> => {
-    // Check if locale is stored in localStorage
-    const storedLocale = localStorage.getItem('locale');
-    if (storedLocale && availableLocales.value.includes(storedLocale)) {
-      currentLocale.value = storedLocale;
-    }
-    
-    await loadTranslations(currentLocale.value);
-  };
-
-  // Watch for locale changes and save to localStorage
-  const updateLocale = (locale: string): void => {
-    localStorage.setItem('locale', locale);
-    setLocale(locale);
+    // No initialization needed for static translations
   };
 
   return {
     t,
-    currentLocale: computed(() => currentLocale.value),
-    availableLocales: computed(() => availableLocales.value),
-    loading: computed(() => loading.value),
-    translations: getCurrentTranslations,
-    setLocale: updateLocale,
+    currentLocale: computed(() => 'en'),
+    availableLocales: computed(() => ['en']),
+    loading: computed(() => false),
+    translations: computed(() => staticTranslations),
+    setLocale,
     initialize,
   };
 }

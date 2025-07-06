@@ -8,7 +8,6 @@ import type {
   SearchResult,
   ArchiveData,
   NavigationItem,
-  TranslationResponse,
   SearchFilters 
 } from '@/types';
 
@@ -32,10 +31,7 @@ class ApiClient {
     return response.data;
   }
 
-  async getTranslations(locale: string = 'en'): Promise<TranslationResponse> {
-    const response = await this.client.get(`/site/translations/${locale}`);
-    return response.data;
-  }
+
 
   async getArchives(): Promise<ArchiveData[]> {
     const response = await this.client.get('/site/archives');
@@ -48,9 +44,8 @@ class ApiClient {
     return response.data;
   }
 
-  async getPost(slug: string, includeTranslations: boolean = false): Promise<Post> {
-    const params = includeTranslations ? { include_translations: '1' } : undefined;
-    const response = await this.client.get(`/posts/${slug}`, { params });
+  async getPost(slug: string): Promise<Post> {
+    const response = await this.client.get(`/posts/${slug}`);
     return response.data;
   }
 
@@ -76,9 +71,8 @@ class ApiClient {
   }
 
   // Categories endpoints
-  async getCategories(includeTranslations: boolean = false): Promise<Category[]> {
-    const params = includeTranslations ? { include_translations: '1' } : undefined;
-    const response = await this.client.get('/categories', { params });
+  async getCategories(): Promise<Category[]> {
+    const response = await this.client.get('/categories');
     return response.data;
   }
 

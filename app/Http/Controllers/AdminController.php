@@ -2,17 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Post;
 use App\Models\Category;
-use Illuminate\Http\Request;
+use App\Models\Post;
+use Illuminate\Support\Facades\Log;
 
 class AdminController extends Controller
 {
     public function dashboard()
     {
         // Debug: Log that we're in the admin controller
-        \Log::info('AdminController dashboard method called');
-        
+        Log::info('AdminController dashboard method called');
+
         $stats = [
             'total_posts' => Post::count(),
             'published_posts' => Post::where('published', true)->count(),

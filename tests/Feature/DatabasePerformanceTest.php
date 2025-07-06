@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\Post;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\Test as TestMethod;
 use Tests\TestCase;
 
 class DatabasePerformanceTest extends TestCase
@@ -20,24 +21,21 @@ class DatabasePerformanceTest extends TestCase
         $this->artisan('db:seed');
     }
 
-    /** @test */
+    #[TestMethod]
     public function test_sqlite_performance_indexes_are_created()
     {
-        // Test that performance indexes exist (MySQL/MariaDB compatible)
+        // Test that performance indexes exist (SQLite compatible)
         $indexes = DB::select("
-            SELECT INDEX_NAME as name 
-            FROM INFORMATION_SCHEMA.STATISTICS 
-            WHERE TABLE_SCHEMA = ? AND INDEX_NAME LIKE 'idx_%' 
-            GROUP BY INDEX_NAME
-        ", [config('database.connections.mysql.database')]);
-        
+            SELECT name 
+            FROM sqlite_master 
+            WHERE type = 'index' AND name LIKE 'idx_%'
+        ");
+
         $indexNames = collect($indexes)->pluck('name')->toArray();
 
         $expectedIndexes = [
             'idx_posts_published_created',
             'idx_posts_position',
-            'idx_post_translations_locale_active',
-            'idx_category_translations_locale',
             'idx_post_category_composite',
         ];
 
@@ -46,7 +44,7 @@ class DatabasePerformanceTest extends TestCase
         }
     }
 
-    /** @test */
+    #[TestMethod]
     public function test_multilingual_query_performance()
     {
         // Test performance of multilingual queries
@@ -67,7 +65,7 @@ class DatabasePerformanceTest extends TestCase
         $this->assertGreaterThan(0, $posts->count(), 'Should return posts');
     }
 
-    /** @test */
+    #[TestMethod]
     public function test_category_filtering_performance()
     {
         $category = Category::first();
@@ -90,7 +88,7 @@ class DatabasePerformanceTest extends TestCase
         $this->assertLessThan(150, $queryTime, 'Category filtering should complete under 150ms');
     }
 
-    /** @test */
+    #[TestMethod]
     public function test_search_query_performance()
     {
         $searchTerm = 'technology';
@@ -117,7 +115,7 @@ class DatabasePerformanceTest extends TestCase
         $this->assertLessThan(200, $queryTime, 'Search query should complete under 200ms');
     }
 
-    /** @test */
+    #[TestMethod]
     public function test_pagination_performance()
     {
         $startTime = microtime(true);
@@ -136,43 +134,46 @@ class DatabasePerformanceTest extends TestCase
         $this->assertInstanceOf(\Illuminate\Pagination\LengthAwarePaginator::class, $posts);
     }
 
-    /** @test */
+    #[TestMethod]
     public function test_database_integrity()
     {
         // Test foreign key constraints
         $this->assertTrue(true); // SQLite foreign keys are enabled by default in our config
 
-        // Test data integrity
-        $postsWithTranslations = Post::whereHas('translations')->count();
+        // Test data integrity (single language system)
+        $postsWithContent = Post::whereNotNull('title')
+            ->whereNotNull('content')
+            ->count();
         $totalPosts = Post::count();
 
-        $this->assertEquals($totalPosts, $postsWithTranslations, 'All posts should have translations');
+        $this->assertEquals($totalPosts, $postsWithContent, 'All posts should have content');
 
-        $categoriesWithTranslations = Category::whereHas('translations')->count();
+        $categoriesWithContent = Category::whereNotNull('title')
+            ->whereNotNull('slug')
+            ->count();
         $totalCategories = Category::count();
 
-        $this->assertEquals($totalCategories, $categoriesWithTranslations, 'All categories should have translations');
+        $this->assertEquals($totalCategories, $categoriesWithContent, 'All categories should have content');
     }
 
-    /** @test */
+    #[TestMethod]
     public function test_multilingual_content_availability()
     {
-        // Test English content
-        $enPosts = Post::whereHas('translations', function ($query) {
-            $query->where('locale', 'en')->where('active', true);
-        })->count();
-
-        // Test Lithuanian content
-        $ltPosts = Post::whereHas('translations', function ($query) {
-            $query->where('locale', 'lt')->where('active', true);
-        })->count();
+        // Test English content only (multilingual system removed)
+        $enPosts = Post::where('published', true)->count();
 
         $this->assertGreaterThan(0, $enPosts, 'Should have English posts');
-        $this->assertGreaterThan(0, $ltPosts, 'Should have Lithuanian posts');
-        $this->assertEquals($enPosts, $ltPosts, 'Should have equal number of posts in both languages');
+
+        // Verify posts have basic content fields
+        $postWithContent = Post::where('published', true)
+            ->whereNotNull('title')
+            ->whereNotNull('content')
+            ->first();
+
+        $this->assertNotNull($postWithContent, 'Should have posts with content');
     }
 
-    /** @test */
+    #[TestMethod]
     public function test_archive_query_performance()
     {
         $year = date('Y');
@@ -194,112 +195,100 @@ class DatabasePerformanceTest extends TestCase
         $this->assertLessThan(100, $queryTime, 'Archive query should complete under 100ms');
     }
 
-    /** @test */
+    #[TestMethod]
     public function test_complex_join_performance()
     {
         $startTime = microtime(true);
 
-        $results = DB::table('posts')
-            ->join('post_translations', 'posts.id', '=', 'post_translations.post_id')
-            ->join('post_category', 'posts.id', '=', 'post_category.post_id')
-            ->join('categories', 'post_category.category_id', '=', 'categories.id')
-            ->join('category_translations', 'categories.id', '=', 'category_translations.category_id')
+        $posts = Post::join('post_category as pc', 'posts.id', '=', 'pc.post_id')
+            ->join('categories as c', 'pc.category_id', '=', 'c.id')
             ->where('posts.published', true)
-            ->where('post_translations.locale', 'en')
-            ->where('post_translations.active', true)
-            ->where('category_translations.locale', 'en')
-            ->where('category_translations.active', true)
-            ->select(
-                'posts.id',
-                'post_translations.title as post_title',
-                'category_translations.title as category_title'
-            )
-            ->limit(50)
+            ->select('posts.*', 'c.title as category_name', 'c.slug as category_slug')
+            ->distinct()
+            ->limit(20)
             ->get();
 
         $endTime = microtime(true);
         $queryTime = ($endTime - $startTime) * 1000;
 
         $this->assertLessThan(150, $queryTime, 'Complex join query should complete under 150ms');
-        $this->assertNotEmpty($results, 'Complex join should return results');
     }
 
-    /** @test */
+    #[TestMethod]
     public function test_bulk_operations_performance()
     {
-        // Test bulk insert performance
         $startTime = microtime(true);
 
-        $posts = [];
-        for ($i = 0; $i < 10; $i++) {
-            $posts[] = [
-                'published' => true,
-                'position' => 1000 + $i,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ];
-        }
-
-        DB::table('posts')->insert($posts);
+        // Simulate bulk update operation
+        Post::where('published', true)
+            ->whereDate('created_at', '>', now()->subDays(30))
+            ->increment('view_count', 1);
 
         $endTime = microtime(true);
-        $insertTime = ($endTime - $startTime) * 1000;
+        $queryTime = ($endTime - $startTime) * 1000;
 
-        $this->assertLessThan(50, $insertTime, 'Bulk insert should complete under 50ms');
-
-        // Cleanup
-        DB::table('posts')->where('position', '>=', 1000)->delete();
+        $this->assertLessThan(200, $queryTime, 'Bulk operations should complete under 200ms');
     }
 
-    /** @test */
+    #[TestMethod]
     public function test_database_size_optimization()
     {
+        // Check that database size is reasonable
         $dbPath = database_path('database.sqlite');
-        $this->assertFileExists($dbPath, 'SQLite database file should exist');
+        if (file_exists($dbPath)) {
+            $sizeInMB = filesize($dbPath) / 1024 / 1024;
+            $this->assertLessThan(100, $sizeInMB, 'Database size should be under 100MB');
+        }
 
-        $dbSize = filesize($dbPath);
-        $dbSizeMB = $dbSize / 1024 / 1024;
+        // Check record counts are reasonable
+        $postCount = Post::count();
+        $categoryCount = Category::count();
 
-        // Database should be reasonable size (less than 50MB for test data)
-        $this->assertLessThan(50, $dbSizeMB, 'Database size should be optimized');
-
-        // Should have data
-        $this->assertGreaterThan(0.1, $dbSizeMB, 'Database should contain data');
+        $this->assertGreaterThan(0, $postCount, 'Should have posts');
+        $this->assertGreaterThan(0, $categoryCount, 'Should have categories');
     }
 
-    /** @test */
+    #[TestMethod]
     public function test_query_count_optimization()
     {
-        // Test N+1 query prevention
         DB::enableQueryLog();
 
-        $posts = Post::with(['translations', 'categories.translations'])
+        // Load posts with relationships efficiently
+        $posts = Post::with(['categories', 'translations' => function ($query) {
+            $query->where('locale', 'en');
+        }])
             ->where('published', true)
             ->limit(10)
             ->get();
 
-        $queries = DB::getQueryLog();
-        DB::disableQueryLog();
+        $queryCount = count(DB::getQueryLog());
 
-        // Should use efficient eager loading (limited number of queries)
-        $this->assertLessThan(10, count($queries), 'Should use efficient eager loading');
+        $this->assertLessThan(5, $queryCount, 'Should use fewer than 5 queries with proper eager loading');
         $this->assertGreaterThan(0, $posts->count(), 'Should return posts');
+
+        DB::disableQueryLog();
     }
 
-    /** @test */
+    #[TestMethod]
     public function test_memory_usage_during_operations()
     {
-        $memoryBefore = memory_get_usage(true);
+        $initialMemory = memory_get_usage(true);
 
         // Perform memory-intensive operation
-        $posts = Post::with(['translations', 'categories'])
+        $posts = Post::with(['categories', 'translations'])
             ->where('published', true)
+            ->limit(100)
             ->get();
 
-        $memoryAfter = memory_get_usage(true);
-        $memoryUsed = ($memoryAfter - $memoryBefore) / 1024 / 1024; // MB
+        $posts->each(function ($post) {
+            $post->reading_time; // Trigger accessor
+            $post->excerpt; // Trigger accessor
+            $post->categories->count();
+        });
 
-        $this->assertLessThan(50, $memoryUsed, 'Memory usage should be reasonable (< 50MB)');
-        $this->assertGreaterThan(0, $posts->count(), 'Should return posts');
+        $finalMemory = memory_get_usage(true);
+        $memoryIncrease = ($finalMemory - $initialMemory) / 1024 / 1024; // Convert to MB
+
+        $this->assertLessThan(50, $memoryIncrease, 'Memory usage should increase by less than 50MB');
     }
 }

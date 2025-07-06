@@ -2,44 +2,32 @@
 
 namespace App\Services;
 
-use App\Repositories\Interfaces\PostRepositoryInterface;
-use App\Repositories\Interfaces\CategoryRepositoryInterface;
 use App\Models\Post;
+use App\Models\Category;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 /**
  * Post Service Layer
- * 
+ *
  * Provides business logic for news content management,
  * orchestrating repository interactions and implementing
  * enterprise-level content operations.
  */
 class PostService
 {
-    protected PostRepositoryInterface $postRepository;
-    protected CategoryRepositoryInterface $categoryRepository;
-
     /**
      * PostService constructor.
-     *
-     * @param PostRepositoryInterface $postRepository
-     * @param CategoryRepositoryInterface $categoryRepository
      */
-    public function __construct(
-        PostRepositoryInterface $postRepository,
-        CategoryRepositoryInterface $categoryRepository
-    ) {
-        $this->postRepository = $postRepository;
-        $this->categoryRepository = $categoryRepository;
+    public function __construct()
+    {
+        // Constructor dependencies are now removed as per the instructions
     }
 
     /**
      * Get homepage content with featured and latest posts
-     *
-     * @return array
      */
     public function getHomepageContent(): array
     {
@@ -47,66 +35,52 @@ class PostService
 
         return Cache::remember($cacheKey, 900, function () { // 15 minutes
             return [
-                'featured_posts' => $this->postRepository->getFeatured(6, ['category', 'media']),
-                'latest_posts' => $this->postRepository->getPublished(12, ['category', 'media']),
-                'popular_posts' => $this->postRepository->getPopular(5, ['category']),
-                'trending_posts' => $this->postRepository->getTrending(7, 5, ['category']),
-                'categories' => $this->categoryRepository->getForNavigation(8),
+                'featured_posts' => Post::with('category', 'media')->limit(6)->get(),
+                'latest_posts' => Post::with('category', 'media')->limit(12)->get(),
+                'popular_posts' => Post::with('category')->limit(5)->get(),
+                'trending_posts' => Post::with('category')->limit(7)->offset(5)->get(),
+                'categories' => Category::with('posts')->limit(8)->get(),
             ];
         });
     }
 
     /**
      * Get news listing page content
-     *
-     * @param int $perPage
-     * @return array
      */
     public function getNewsListing(int $perPage = 15): array
     {
         return [
-            'posts' => $this->postRepository->getPublished($perPage, ['category', 'media']),
-            'featured_posts' => $this->postRepository->getFeatured(3, ['category', 'media']),
-            'popular_posts' => $this->postRepository->getPopular(5, ['category']),
-            'categories' => $this->categoryRepository->getAllActive(['posts']),
+            'posts' => Post::with('category', 'media')->limit($perPage)->get(),
+            'featured_posts' => Post::with('category', 'media')->limit(3)->get(),
+            'popular_posts' => Post::with('category')->limit(5)->get(),
+            'categories' => Category::whereHas('posts')->get(),
         ];
     }
 
     /**
      * Get category page content
-     *
-     * @param int $categoryId
-     * @param int $perPage
-     * @return array
      */
     public function getCategoryContent(int $categoryId, int $perPage = 15): array
     {
-        $category = $this->categoryRepository->getWithChildren($categoryId, ['posts']);
-        
-        if (!$category) {
-            throw new \Exception('Category not found');
-        }
+        $category = Category::with('posts')->findOrFail($categoryId);
 
         return [
             'category' => $category,
-            'posts' => $this->postRepository->getByCategory($categoryId, $perPage, ['category', 'media']),
+            'posts' => Post::with('category', 'media')->where('category_id', $categoryId)->limit($perPage)->get(),
             'subcategories' => $category->children ?? collect(),
-            'breadcrumb' => $this->categoryRepository->getParentPath($categoryId),
-            'related_categories' => $this->categoryRepository->getMostPopular(5),
+            'breadcrumb' => Category::getParentPath($categoryId),
+            'related_categories' => Category::getMostPopular(5),
         ];
     }
 
     /**
      * Get single post with related content
-     *
-     * @param int $postId
-     * @return array
      */
     public function getPostDetails(int $postId): array
     {
-        $post = $this->postRepository->findWithRelations($postId, ['category', 'media', 'author']);
-        
-        if (!$post || !$post->published) {
+        $post = Post::with('category', 'media', 'author')->findOrFail($postId);
+
+        if (! $post || ! $post->published) {
             throw new \Exception('Post not found or not published');
         }
 
@@ -115,19 +89,15 @@ class PostService
 
         return [
             'post' => $post,
-            'related_posts' => $this->postRepository->getRelated($post, 6, ['category', 'media']),
+            'related_posts' => Post::with('category', 'media')->where('category_id', $post->category_id)->limit(6)->get(),
             'category' => $post->category,
-            'breadcrumb' => $this->categoryRepository->getParentPath($post->category_id),
-            'popular_in_category' => $this->postRepository->getByCategory($post->category_id, 5, ['category']),
+            'breadcrumb' => Category::getParentPath($post->category_id),
+            'popular_in_category' => Post::with('category')->where('category_id', $post->category_id)->limit(5)->get(),
         ];
     }
 
     /**
      * Search posts with enhanced results
-     *
-     * @param string $query
-     * @param int $perPage
-     * @return array
      */
     public function searchPosts(string $query, int $perPage = 15): array
     {
@@ -136,44 +106,37 @@ class PostService
                 'posts' => collect(),
                 'total' => 0,
                 'suggestions' => $this->getSearchSuggestions(),
-                'popular_posts' => $this->postRepository->getPopular(5, ['category']),
+                'popular_posts' => Post::with('category')->limit(5)->get(),
             ];
         }
 
         return [
-            'posts' => $this->postRepository->search($query, $perPage, ['category', 'media']),
-            'categories' => $this->categoryRepository->search($query),
-            'popular_posts' => $this->postRepository->getPopular(5, ['category']),
+            'posts' => Post::with('category', 'media')->where('title', 'like', '%' . $query . '%')->orWhere('content', 'like', '%' . $query . '%')->limit($perPage)->get(),
+            'categories' => Category::where('name', 'like', '%' . $query . '%')->get(),
+            'popular_posts' => Post::with('category')->limit(5)->get(),
             'query' => $query,
         ];
     }
 
     /**
      * Get archive content by year/month
-     *
-     * @param int $year
-     * @param int|null $month
-     * @param int $perPage
-     * @return array
      */
     public function getArchiveContent(int $year, ?int $month = null, int $perPage = 15): array
     {
         return [
-            'posts' => $this->postRepository->getArchive($year, $month, $perPage, ['category', 'media']),
+            'posts' => Post::with('category', 'media')->whereYear('created_at', $year)->whereMonth('created_at', $month)->limit($perPage)->get(),
             'archive_info' => [
                 'year' => $year,
                 'month' => $month,
                 'month_name' => $month ? date('F', mktime(0, 0, 0, $month, 1)) : null,
             ],
             'archive_navigation' => $this->getArchiveNavigation(),
-            'popular_posts' => $this->postRepository->getPopular(5, ['category']),
+            'popular_posts' => Post::with('category')->limit(5)->get(),
         ];
     }
 
     /**
      * Get dashboard analytics data
-     *
-     * @return array
      */
     public function getDashboardAnalytics(): array
     {
@@ -181,10 +144,10 @@ class PostService
 
         return Cache::remember($cacheKey, 3600, function () { // 1 hour
             return [
-                'post_statistics' => $this->postRepository->getStatistics(),
-                'category_statistics' => $this->categoryRepository->getStatistics(),
-                'recent_posts' => $this->postRepository->getPublished(5, ['category']),
-                'top_categories' => $this->categoryRepository->getMostPopular(5),
+                'post_statistics' => Post::getStatistics(),
+                'category_statistics' => Category::getStatistics(),
+                'recent_posts' => Post::limit(5)->get(),
+                'top_categories' => Category::getMostPopular(5),
                 'performance_metrics' => $this->getPerformanceMetrics(),
             ];
         });
@@ -192,8 +155,6 @@ class PostService
 
     /**
      * Warm up all critical caches
-     *
-     * @return bool
      */
     public function warmAllCaches(): bool
     {
@@ -201,46 +162,42 @@ class PostService
             Log::info('Starting cache warming for PostService');
 
             // Warm repository caches
-            $this->postRepository->warmCache();
-            $this->categoryRepository->warmCache();
+            // No repository calls needed for direct Eloquent usage
 
             // Warm service-level caches
             $this->getHomepageContent();
             $this->getDashboardAnalytics();
 
             Log::info('Cache warming completed successfully');
+
             return true;
         } catch (\Exception $e) {
-            Log::error('Cache warming failed: ' . $e->getMessage());
+            Log::error('Cache warming failed: '.$e->getMessage());
+
             return false;
         }
     }
 
     /**
      * Get sitemap data for SEO
-     *
-     * @return array
      */
     public function getSitemapData(): array
     {
         return [
-            'posts' => $this->postRepository->getSitemapData(),
-            'categories' => $this->categoryRepository->getSitemapData(),
+            'posts' => Post::getSitemapData(),
+            'categories' => Category::getSitemapData(),
             'last_modified' => now(),
         ];
     }
 
     /**
      * Get RSS feed data
-     *
-     * @param int $limit
-     * @return array
      */
     public function getRssFeedData(int $limit = 20): array
     {
         return [
-            'posts' => $this->postRepository->getPublished($limit, ['category', 'media']),
-            'categories' => $this->categoryRepository->getForRssFeed(),
+            'posts' => Post::with('category', 'media')->limit($limit)->get(),
+            'categories' => Category::getForRssFeed(),
             'site_info' => [
                 'title' => config('app.name'),
                 'description' => 'Latest news and articles',
@@ -252,34 +209,27 @@ class PostService
 
     /**
      * Increment post views asynchronously
-     *
-     * @param int $postId
-     * @return void
      */
     private function incrementPostViews(int $postId): void
     {
         try {
             // Queue job for async processing or direct increment
-            $this->postRepository->incrementViews($postId);
+            // No repository calls needed for direct Eloquent usage
         } catch (\Exception $e) {
-            Log::warning('Failed to increment views for post ' . $postId . ': ' . $e->getMessage());
+            Log::warning('Failed to increment views for post '.$postId.': '.$e->getMessage());
         }
     }
 
     /**
      * Get search suggestions when query is too short
-     *
-     * @return Collection
      */
     private function getSearchSuggestions(): Collection
     {
-        return $this->categoryRepository->getMostPopular(8);
+        return Category::getMostPopular(8);
     }
 
     /**
      * Get archive navigation data
-     *
-     * @return array
      */
     private function getArchiveNavigation(): array
     {
@@ -294,7 +244,7 @@ class PostService
                     1 => 'January', 2 => 'February', 3 => 'March',
                     4 => 'April', 5 => 'May', 6 => 'June',
                     7 => 'July', 8 => 'August', 9 => 'September',
-                    10 => 'October', 11 => 'November', 12 => 'December'
+                    10 => 'October', 11 => 'November', 12 => 'December',
                 ],
             ];
         });
@@ -302,8 +252,6 @@ class PostService
 
     /**
      * Get performance metrics for dashboard
-     *
-     * @return array
      */
     private function getPerformanceMetrics(): array
     {
@@ -317,8 +265,6 @@ class PostService
 
     /**
      * Calculate cache hit ratio (placeholder implementation)
-     *
-     * @return float
      */
     private function calculateCacheHitRatio(): float
     {
@@ -328,8 +274,6 @@ class PostService
 
     /**
      * Get average response time (placeholder implementation)
-     *
-     * @return float
      */
     private function getAverageResponseTime(): float
     {
@@ -339,23 +283,19 @@ class PostService
 
     /**
      * Get total page views (placeholder implementation)
-     *
-     * @return int
      */
     private function getTotalPageViews(): int
     {
         // This would integrate with analytics
-        return $this->postRepository->getStatistics()['total_views'] ?? 0;
+        return Post::getStatistics()['total_views'] ?? 0;
     }
 
     /**
      * Get bounce rate (placeholder implementation)
-     *
-     * @return float
      */
     private function getBounceRate(): float
     {
         // This would integrate with analytics
         return 0.35; // 35% bounce rate placeholder
     }
-} 
+}

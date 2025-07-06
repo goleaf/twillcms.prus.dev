@@ -16,10 +16,11 @@ class CategoryResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'name' => $this->name,
+            'name' => $this->title,
+            'title' => $this->title,
             'slug' => $this->slug,
             'description' => $this->description,
-            'color' => $this->color ?? '#3B82F6',
+            'color' => $this->color_code ?? '#3B82F6',
             'position' => $this->position,
             'published' => $this->published,
             'created_at' => $this->created_at->toISOString(),
@@ -27,8 +28,8 @@ class CategoryResource extends JsonResource
 
             // Meta data for SEO
             'meta' => [
-                'title' => $this->name,
-                'description' => $this->description ?: "Posts in {$this->name} category",
+                'title' => $this->title,
+                'description' => $this->description ?: "Posts in {$this->title} category",
                 'canonical_url' => url("/categories/{$this->slug}"),
             ],
 
@@ -43,21 +44,15 @@ class CategoryResource extends JsonResource
                 return $this->translations->mapWithKeys(function ($translation) {
                     return [
                         $translation->locale => [
-                            'name' => $translation->name,
+                            'title' => $translation->title,
                             'description' => $translation->description,
-                            'slug' => $translation->slug,
                         ],
                     ];
                 });
             }),
 
-            // Image/icon if available
-            'image' => $this->when($this->image_url, function () {
-                return [
-                    'url' => $this->image_url,
-                    'alt' => $this->name,
-                ];
-            }),
+            // Icon if available
+            'icon' => $this->icon ?? 'default-icon',
         ];
     }
 }

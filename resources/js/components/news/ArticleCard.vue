@@ -57,7 +57,7 @@
       >
         <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold bg-red-500 text-white">
           <FireIcon class="h-3 w-3 mr-1" />
-          Trending
+          {{ $t('news.trending') }}
         </span>
       </div>
     </div>
@@ -148,7 +148,7 @@
           :to="`/blog/${article.slug}`"
           class="inline-flex items-center text-sm font-semibold text-blue-600 hover:text-blue-700 transition-colors group"
         >
-          Read Full Story
+          {{ $t('news.read_full_story') }}
           <ArrowRightIcon class="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform" />
         </router-link>
       </div>

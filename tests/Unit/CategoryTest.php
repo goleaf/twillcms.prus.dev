@@ -179,4 +179,4 @@ class CategoryTest extends TestCase
         $category->markAsFeatured(false);
         $this->assertFalse($category->fresh()->is_featured);
     }
-} 
+}

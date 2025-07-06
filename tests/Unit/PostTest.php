@@ -125,7 +125,7 @@ class PostTest extends TestCase
     public function test_post_excerpt_override()
     {
         $customExcerpt = 'This is a custom excerpt for this post.';
-        
+
         $post = Post::create([
             'published' => true,
             'title' => 'Test Post',
@@ -199,4 +199,4 @@ class PostTest extends TestCase
         $this->assertStringContainsString('<strong>HTML</strong>', $post->content);
         $this->assertStringContainsString('<p>', $post->content);
     }
-} 
+}

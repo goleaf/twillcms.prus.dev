@@ -7,40 +7,29 @@ use Illuminate\Support\Facades\Redis;
 
 /**
  * Smart Caching Trait
- * 
+ *
  * Implements intelligent cache selection with Hot/Warm/Cold/Static strategies
  * based on access frequency, data size, and update patterns.
- * 
- * @package App\Traits\Caching
  */
 trait SmartCaching
 {
     /**
      * Cache strategies configuration
-     *
-     * @var array
      */
     protected array $cacheStrategies = [
         'hot' => ['driver' => 'array', 'ttl' => 300],      // In-memory, 5 minutes
-        'warm' => ['driver' => 'redis', 'ttl' => 1800],    // Redis, 30 minutes  
+        'warm' => ['driver' => 'redis', 'ttl' => 1800],    // Redis, 30 minutes
         'cold' => ['driver' => 'database', 'ttl' => 0],    // No cache, direct DB
         'static' => ['driver' => 'file', 'ttl' => 86400],  // File cache, 24 hours
     ];
 
     /**
      * Access frequency tracking
-     *
-     * @var array
      */
     protected static array $accessFrequency = [];
 
     /**
      * Smart cache remember with automatic strategy selection
-     *
-     * @param string $key
-     * @param callable $callback
-     * @param string|null $strategy
-     * @return mixed
      */
     public function smartRemember(string $key, callable $callback, ?string $strategy = null): mixed
     {
@@ -61,9 +50,6 @@ trait SmartCaching
 
     /**
      * Determine optimal cache strategy for given key
-     *
-     * @param string $key
-     * @return string
      */
     protected function determineStrategy(string $key): string
     {
@@ -92,9 +78,6 @@ trait SmartCaching
 
     /**
      * Get access frequency for a cache key
-     *
-     * @param string $key
-     * @return int
      */
     protected function getAccessFrequency(string $key): int
     {
@@ -103,9 +86,6 @@ trait SmartCaching
 
     /**
      * Track access to a cache key
-     *
-     * @param string $key
-     * @return void
      */
     protected function trackAccess(string $key): void
     {
@@ -115,47 +95,56 @@ trait SmartCaching
 
     /**
      * Estimate data size for cache strategy decision
-     *
-     * @param string $key
-     * @return int
      */
     protected function estimateDataSize(string $key): int
     {
         // Estimate based on key pattern
-        if (str_contains($key, 'posts.all')) return 5120;      // Large collection
-        if (str_contains($key, 'post.')) return 2048;          // Single post
-        if (str_contains($key, 'categories')) return 1024;     // Category list
-        if (str_contains($key, 'popular')) return 3072;        // Popular posts
-        if (str_contains($key, 'recent')) return 2560;         // Recent posts
+        if (str_contains($key, 'posts.all')) {
+            return 5120;
+        }      // Large collection
+        if (str_contains($key, 'post.')) {
+            return 2048;
+        }          // Single post
+        if (str_contains($key, 'categories')) {
+            return 1024;
+        }     // Category list
+        if (str_contains($key, 'popular')) {
+            return 3072;
+        }        // Popular posts
+        if (str_contains($key, 'recent')) {
+            return 2560;
+        }         // Recent posts
 
         return 1536; // Default estimation
     }
 
     /**
      * Get update frequency for content type
-     *
-     * @param string $key
-     * @return float
      */
     protected function getUpdateFrequency(string $key): float
     {
         // Based on content type patterns
-        if (str_contains($key, 'static')) return 0.001;        // Very low
-        if (str_contains($key, 'categories')) return 0.01;     // Low
-        if (str_contains($key, 'posts.published')) return 0.1; // Medium
-        if (str_contains($key, 'trending')) return 0.5;        // High
-        if (str_contains($key, 'views')) return 1.0;           // Very high
+        if (str_contains($key, 'static')) {
+            return 0.001;
+        }        // Very low
+        if (str_contains($key, 'categories')) {
+            return 0.01;
+        }     // Low
+        if (str_contains($key, 'posts.published')) {
+            return 0.1;
+        } // Medium
+        if (str_contains($key, 'trending')) {
+            return 0.5;
+        }        // High
+        if (str_contains($key, 'views')) {
+            return 1.0;
+        }           // Very high
 
         return 0.1; // Default medium frequency
     }
 
     /**
      * Cache with explicit strategy
-     *
-     * @param string $key
-     * @param callable $callback
-     * @param string $strategy
-     * @return mixed
      */
     public function cacheWith(string $key, callable $callback, string $strategy): mixed
     {
@@ -164,10 +153,6 @@ trait SmartCaching
 
     /**
      * Cache as hot data (in-memory)
-     *
-     * @param string $key
-     * @param callable $callback
-     * @return mixed
      */
     public function cacheHot(string $key, callable $callback): mixed
     {
@@ -176,10 +161,6 @@ trait SmartCaching
 
     /**
      * Cache as warm data (Redis)
-     *
-     * @param string $key
-     * @param callable $callback
-     * @return mixed
      */
     public function cacheWarm(string $key, callable $callback): mixed
     {
@@ -188,10 +169,6 @@ trait SmartCaching
 
     /**
      * Cache as static data (file)
-     *
-     * @param string $key
-     * @param callable $callback
-     * @return mixed
      */
     public function cacheStatic(string $key, callable $callback): mixed
     {
@@ -200,9 +177,6 @@ trait SmartCaching
 
     /**
      * Clear cache for specific key
-     *
-     * @param string $key
-     * @return bool
      */
     public function clearCache(string $key): bool
     {
@@ -220,9 +194,6 @@ trait SmartCaching
 
     /**
      * Clear all caches for the model
-     *
-     * @param string $prefix
-     * @return bool
      */
     public function clearAllCache(string $prefix = ''): bool
     {
@@ -235,20 +206,16 @@ trait SmartCaching
 
     /**
      * Get cache prefix for the model
-     *
-     * @return string
      */
     protected function getCachePrefix(): string
     {
         $className = class_basename(static::class);
+
         return strtolower(str_replace('Repository', '', $className));
     }
 
     /**
      * Warm up cache for frequently accessed data
-     *
-     * @param array $keys
-     * @return void
      */
     public function warmCache(array $keys): void
     {
@@ -261,8 +228,6 @@ trait SmartCaching
 
     /**
      * Get cache statistics
-     *
-     * @return array
      */
     public function getCacheStats(): array
     {
@@ -277,9 +242,6 @@ trait SmartCaching
 
     /**
      * Get cache size for specific driver
-     *
-     * @param string $driver
-     * @return int
      */
     protected function getCacheSize(string $driver): int
     {
@@ -299,8 +261,6 @@ trait SmartCaching
 
     /**
      * Get cache hit ratio
-     *
-     * @return float
      */
     protected function getCacheHitRatio(): float
     {
@@ -313,8 +273,6 @@ trait SmartCaching
 
     /**
      * Get access patterns for analysis
-     *
-     * @return array
      */
     protected function getAccessPatterns(): array
     {
@@ -327,9 +285,6 @@ trait SmartCaching
 
     /**
      * Get most accessed cache keys
-     *
-     * @param int $limit
-     * @return array
      */
     protected function getMostAccessedKeys(int $limit = 10): array
     {
@@ -339,8 +294,6 @@ trait SmartCaching
 
     /**
      * Get cache efficiency metrics
-     *
-     * @return array
      */
     protected function getCacheEfficiency(): array
     {
@@ -350,4 +303,4 @@ trait SmartCaching
             'static_efficiency' => 0.92,
         ];
     }
-} 
+}

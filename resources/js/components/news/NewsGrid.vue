@@ -12,7 +12,7 @@
       <!-- Featured Section -->
       <section v-if="featuredArticles.length > 0" class="featured-section mb-8 lg:mb-12">
         <h2 class="text-2xl lg:text-3xl font-bold text-gray-900 mb-6 font-serif">
-          {{ featuredSectionTitle }}
+          {{ $t('news.featured_stories') }}
         </h2>
         
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
@@ -49,7 +49,7 @@
           <section>
             <header class="border-b border-gray-200 pb-4 mb-6">
               <h2 class="text-xl lg:text-2xl font-bold text-gray-900 font-serif">
-                {{ latestSectionTitle }}
+                {{ $t('news.latest_news') }}
               </h2>
             </header>
 
@@ -74,7 +74,7 @@
           <section v-if="trendingArticles.length > 0" class="bg-gray-50 rounded-lg p-6">
             <h2 class="text-lg font-bold text-gray-900 mb-6 font-serif flex items-center">
               <FireIcon class="h-5 w-5 text-red-500 mr-2" />
-              Trending Now
+              {{ $t('news.trending_now') }}
             </h2>
             <div class="space-y-4">
               <ArticleCard
@@ -95,7 +95,9 @@
     <!-- Empty State -->
     <div v-else class="text-center py-16">
       <NewspaperIcon class="h-16 w-16 text-gray-300 mx-auto mb-4" />
-      <h3 class="text-lg font-semibold text-gray-900 mb-2">No articles found</h3>
+      <h3 class="text-lg font-semibold text-gray-900 mb-2">
+        {{ $t('news.no_articles_found') }}
+      </h3>
       <p class="text-gray-600">{{ emptyStateMessage }}</p>
     </div>
   </div>

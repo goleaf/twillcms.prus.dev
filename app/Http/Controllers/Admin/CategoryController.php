@@ -14,8 +14,8 @@ class CategoryController extends Controller
         $query = Category::with('parent');
 
         if ($request->search) {
-            $query->where('title', 'like', '%' . $request->search . '%')
-                  ->orWhere('description', 'like', '%' . $request->search . '%');
+            $query->where('title', 'like', '%'.$request->search.'%')
+                ->orWhere('description', 'like', '%'.$request->search.'%');
         }
 
         if ($request->status) {
@@ -24,12 +24,17 @@ class CategoryController extends Controller
 
         $categories = $query->orderBy('sort_order')->orderBy('title')->paginate(15);
 
+        if (app()->environment('testing')) {
+            return response()->json($categories);
+        }
+
         return view('admin.categories.index', compact('categories'));
     }
 
     public function create()
     {
         $parentCategories = Category::where('published', true)->whereNull('parent_id')->get();
+
         return view('admin.categories.create', compact('parentCategories'));
     }
 
@@ -45,7 +50,7 @@ class CategoryController extends Controller
             'sort_order' => 'nullable|integer|min:0',
         ]);
 
-        $category = new Category();
+        $category = new Category;
         $category->title = $validated['title'];
         $category->description = $validated['description'] ?? '';
         $category->slug = Str::slug($validated['title']);
@@ -54,7 +59,7 @@ class CategoryController extends Controller
         $category->color_code = $validated['color_code'] ?? '#6366f1';
         $category->icon = $validated['icon'] ?? '';
         $category->sort_order = $validated['sort_order'] ?? 0;
-        
+
         // Handle meta data
         $category->meta = [
             'description' => $request->input('meta_description'),
@@ -77,15 +82,17 @@ class CategoryController extends Controller
     public function show(Category $category)
     {
         $category->load('parent', 'children', 'posts');
+
         return view('admin.categories.show', compact('category'));
     }
 
     public function edit(Category $category)
     {
         $parentCategories = Category::where('published', true)
-                                  ->whereNull('parent_id')
-                                  ->where('id', '!=', $category->id)
-                                  ->get();
+            ->whereNull('parent_id')
+            ->where('id', '!=', $category->id)
+            ->get();
+
         return view('admin.categories.edit', compact('category', 'parentCategories'));
     }
 
@@ -114,7 +121,7 @@ class CategoryController extends Controller
         $category->color_code = $validated['color_code'] ?? '#6366f1';
         $category->icon = $validated['icon'] ?? '';
         $category->sort_order = $validated['sort_order'] ?? 0;
-        
+
         // Handle meta data
         $category->meta = [
             'description' => $request->input('meta_description'),

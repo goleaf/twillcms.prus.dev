@@ -19,7 +19,7 @@ class CategoryController extends Controller
     {
         $cacheKey = 'api.categories.index.'.($request->has('include_translations') ? 'with_translations' : 'basic');
 
-        $data = Cache::remember($cacheKey, 3600, function () use ($request) { // 1 hour cache
+        $data = Cache::remember($cacheKey, 1800, function () use ($request) { // 30 minutes cache
             $query = Category::published()
                 ->withCount('posts')
                 ->orderBy('position');
@@ -31,11 +31,13 @@ class CategoryController extends Controller
 
             $categories = $query->get();
 
-            return CategoryResource::collection($categories);
+            return [
+                'data' => CategoryResource::collection($categories),
+            ];
         });
 
         return response()->json($data)
-            ->header('Cache-Control', 'public, max-age=3600') // 1 hour browser cache
+            ->header('Cache-Control', 'public, max-age=1800') // 30 minutes browser cache
             ->header('Vary', 'Accept, Accept-Language');
     }
 
@@ -48,7 +50,10 @@ class CategoryController extends Controller
 
         $data = Cache::remember($cacheKey, 600, function () use ($slug, $request) { // 10 minutes cache
             $query = Category::published()
-                ->forSlug($slug);
+                ->where('slug', $slug)
+                ->withCount(['posts' => function ($query) {
+                    $query->published();
+                }]);
 
             // Include translations if requested
             if ($request->has('include_translations')) {
@@ -68,24 +73,8 @@ class CategoryController extends Controller
             $categoryData = new CategoryResource($category);
             $categoryArray = $categoryData->toArray($request);
 
-            // Add paginated posts
-            $categoryArray['posts'] = [
-                'data' => PostSummaryResource::collection($posts->items()),
-                'meta' => [
-                    'current_page' => $posts->currentPage(),
-                    'last_page' => $posts->lastPage(),
-                    'per_page' => $posts->perPage(),
-                    'total' => $posts->total(),
-                    'from' => $posts->firstItem(),
-                    'to' => $posts->lastItem(),
-                ],
-                'links' => [
-                    'first' => $posts->url(1),
-                    'last' => $posts->url($posts->lastPage()),
-                    'prev' => $posts->previousPageUrl(),
-                    'next' => $posts->nextPageUrl(),
-                ],
-            ];
+            // Add posts directly (not nested in data)
+            $categoryArray['posts'] = PostSummaryResource::collection($posts->items());
 
             return $categoryArray;
         });
@@ -116,7 +105,7 @@ class CategoryController extends Controller
                         'slug' => $category->slug,
                         'color' => $category->color ?? '#3B82F6',
                         'posts_count' => $category->posts_count,
-                        'url' => route('blog.category', ['slug' => $category->slug]),
+                        'url' => "/categories/{$category->slug}",
                     ];
                 });
 
@@ -134,32 +123,34 @@ class CategoryController extends Controller
     {
         $cacheKey = 'api.categories.popular';
 
-        $data = Cache::remember($cacheKey, 3600, function () use ($request) { // 1 hour cache
+        $data = Cache::remember($cacheKey, 1800, function () use ($request) { // 30 minutes cache
             $limit = min($request->get('limit', 5), 20); // Max 20 popular categories
 
+            // Get categories with post counts, then filter in PHP for SQLite compatibility
             $categories = Category::published()
                 ->withCount(['posts' => function ($query) {
                     $query->published();
                 }])
-                ->having('posts_count', '>', 0)
                 ->orderBy('posts_count', 'desc')
-                ->limit($limit)
                 ->get()
-                ->map(function ($category) {
-                    return [
-                        'id' => $category->id,
-                        'name' => $category->title, // Use title instead of name
-                        'slug' => $category->slug,
-                        'color' => $category->color ?? '#3B82F6',
-                        'posts_count' => $category->posts_count,
-                        'url' => route('blog.category', ['slug' => $category->slug]),
-                    ];
-                });
+                ->filter(function ($category) {
+                    return $category->posts_count > 0;
+                })
+                ->take($limit);
 
-            return $categories;
+            return $categories->map(function ($category) {
+                return [
+                    'id' => $category->id,
+                    'name' => $category->title, // Use title instead of name
+                    'slug' => $category->slug,
+                    'color' => $category->color ?? '#3B82F6',
+                    'posts_count' => (int) $category->posts_count,
+                    'url' => "/categories/{$category->slug}",
+                ];
+            });
         });
 
         return response()->json($data)
-            ->header('Cache-Control', 'public, max-age=3600'); // 1 hour browser cache
+            ->header('Cache-Control', 'public, max-age=1800'); // 30 minutes browser cache
     }
 }

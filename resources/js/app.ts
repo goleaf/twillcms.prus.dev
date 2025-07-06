@@ -1,7 +1,7 @@
 import { createApp } from 'vue';
 import { pinia } from '@/stores';
 import router from '@/router';
-import App from '@/App.vue';
+import App from '@/components/App.vue';
 import { translationInstance } from '@/composables/useTranslations';
 
 // CSS imports

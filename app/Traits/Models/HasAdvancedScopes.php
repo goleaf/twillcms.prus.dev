@@ -13,13 +13,13 @@ trait HasAdvancedScopes
     public function scopePublished(Builder $query): Builder
     {
         $query->where('published', true);
-        
+
         // Only add published_at condition if the column exists
         if (Schema::hasColumn($this->getTable(), 'published_at')) {
             $query->whereNotNull('published_at')
-                  ->where('published_at', '<=', now());
+                ->where('published_at', '<=', now());
         }
-        
+
         return $query;
     }
 
@@ -31,7 +31,7 @@ trait HasAdvancedScopes
         if (Schema::hasColumn($this->getTable(), 'published_at')) {
             return $query->where('published_at', '>=', now()->subDays($days));
         }
-        
+
         // Fallback to created_at if published_at doesn't exist
         return $query->where('created_at', '>=', now()->subDays($days));
     }
@@ -45,7 +45,7 @@ trait HasAdvancedScopes
             if (Schema::hasColumn($this->getTable(), 'settings')) {
                 $q->whereJsonContains('settings->is_trending', true);
             }
-            
+
             // Fallback for models with view_count
             if (Schema::hasColumn($this->getTable(), 'view_count')) {
                 $q->orWhere('view_count', '>', 100);
@@ -62,7 +62,7 @@ trait HasAdvancedScopes
             if (Schema::hasColumn($this->getTable(), 'settings')) {
                 $q->whereJsonContains('settings->is_featured', true);
             }
-            
+
             // Fallback for models with priority
             if (Schema::hasColumn($this->getTable(), 'priority')) {
                 $q->orWhere('priority', '>', 0);
@@ -78,7 +78,7 @@ trait HasAdvancedScopes
         if (Schema::hasColumn($this->getTable(), 'settings')) {
             return $query->whereJsonContains('settings->is_breaking', true);
         }
-        
+
         return $query; // Return unchanged if no settings column
     }
 
@@ -89,9 +89,9 @@ trait HasAdvancedScopes
     {
         if (Schema::hasColumn($this->getTable(), 'view_count')) {
             return $query->where('view_count', '>=', $minViews)
-                         ->orderBy('view_count', 'desc');
+                ->orderBy('view_count', 'desc');
         }
-        
+
         return $query; // Return unchanged if no view_count column
     }
 
@@ -101,6 +101,7 @@ trait HasAdvancedScopes
     public function scopeDateRange(Builder $query, $startDate, $endDate): Builder
     {
         $dateColumn = Schema::hasColumn($this->getTable(), 'published_at') ? 'published_at' : 'created_at';
+
         return $query->whereBetween($dateColumn, [$startDate, $endDate]);
     }
 
@@ -110,13 +111,13 @@ trait HasAdvancedScopes
     public function scopeArchive(Builder $query, int $year, ?int $month = null): Builder
     {
         $dateColumn = Schema::hasColumn($this->getTable(), 'published_at') ? 'published_at' : 'created_at';
-        
+
         $query->whereYear($dateColumn, $year);
-        
+
         if ($month) {
             $query->whereMonth($dateColumn, $month);
         }
-        
+
         return $query;
     }
 
@@ -129,11 +130,11 @@ trait HasAdvancedScopes
             // Search in translated attributes if model uses translations
             if (method_exists($this, 'whereTranslationLike')) {
                 $q->whereTranslationLike('title', "%{$term}%");
-                
+
                 if (in_array('description', $this->translatedAttributes ?? [])) {
                     $q->orWhereTranslationLike('description', "%{$term}%");
                 }
-                
+
                 if (in_array('content', $this->translatedAttributes ?? [])) {
                     $q->orWhereTranslationLike('content', "%{$term}%");
                 }
@@ -142,11 +143,11 @@ trait HasAdvancedScopes
                 if (Schema::hasColumn($this->getTable(), 'title')) {
                     $q->where('title', 'like', "%{$term}%");
                 }
-                
+
                 if (Schema::hasColumn($this->getTable(), 'description')) {
                     $q->orWhere('description', 'like', "%{$term}%");
                 }
-                
+
                 if (Schema::hasColumn($this->getTable(), 'content')) {
                     $q->orWhere('content', 'like', "%{$term}%");
                 }
@@ -162,7 +163,40 @@ trait HasAdvancedScopes
         if (Schema::hasColumn($this->getTable(), 'view_count')) {
             return $query->where('view_count', '>=', $minViews);
         }
-        
+
         return $query; // Return unchanged if no view_count column
+    }
+
+    public function scopeWhereTranslationLike(Builder $query, string $column, string $like): Builder
+    {
+        if (method_exists($this, 'translations')) {
+            return $query->whereHas('translations', function ($q) use ($column, $like) {
+                $q->where($column, 'like', $like)->where('active', true);
+            });
+        }
+
+        return $query->where($column, 'like', $like);
+    }
+
+    public function scopeOrWhereTranslationLike(Builder $query, string $column, string $like): Builder
+    {
+        if (method_exists($this, 'translations')) {
+            return $query->orWhereHas('translations', function ($q) use ($column, $like) {
+                $q->where($column, 'like', $like)->where('active', true);
+            });
+        }
+
+        return $query->orWhere($column, 'like', $like);
+    }
+
+    public function scopeForSlug(Builder $query, string $slug): Builder
+    {
+        if (method_exists($this, 'slugs')) {
+            return $query->whereHas('slugs', function ($q) use ($slug) {
+                $q->where('slug', $slug)->where('active', true);
+            });
+        }
+
+        return $query->where('slug', $slug);
     }
 }

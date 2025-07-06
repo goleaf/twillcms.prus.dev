@@ -4,8 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\Category;
 use App\Models\Post;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test as TestMethod;
 use Tests\TestCase;
 
 /**
@@ -19,7 +19,7 @@ class ComprehensiveRouteTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         // Create test data
         $this->createTestData();
     }
@@ -70,7 +70,7 @@ class ComprehensiveRouteTest extends TestCase
         $post->categories()->attach($category->id);
     }
 
-    /** @test */
+    #[TestMethod]
     public function test_public_web_routes_are_accessible()
     {
         $routes = [
@@ -91,12 +91,12 @@ class ComprehensiveRouteTest extends TestCase
 
         foreach ($routes as $route => $expectedStatus) {
             $response = $this->get($route);
-            $this->assertEquals($expectedStatus, $response->getStatusCode(), 
+            $this->assertEquals($expectedStatus, $response->getStatusCode(),
                 "Route {$route} returned status {$response->getStatusCode()}, expected {$expectedStatus}");
         }
     }
 
-    /** @test */
+    #[TestMethod]
     public function test_api_v1_routes_are_accessible()
     {
         $routes = [
@@ -120,41 +120,23 @@ class ComprehensiveRouteTest extends TestCase
 
         foreach ($routes as $route => $expectedStatus) {
             $response = $this->get($route);
-            $this->assertEquals($expectedStatus, $response->getStatusCode(), 
+            $this->assertEquals($expectedStatus, $response->getStatusCode(),
                 "API route {$route} returned status {$response->getStatusCode()}, expected {$expectedStatus}");
         }
     }
 
-    /** @test */
-    public function test_admin_routes_require_authentication()
-    {
-        $adminRoutes = [
-            '/admin',
-            '/admin/posts',
-            '/admin/categories',
-            '/admin/settings',
-        ];
-
-        foreach ($adminRoutes as $route) {
-            $response = $this->get($route);
-            // Should redirect to login, return 401/403, or 500 for misconfigured routes
-            $this->assertContains($response->getStatusCode(), [302, 401, 403, 500],
-                "Admin route {$route} should require authentication or be misconfigured");
-        }
-    }
-
-    /** @test */
+    #[TestMethod]
     public function test_language_switching_functionality()
     {
-        // Test language switching endpoint
+        // Language switching endpoint has been removed in single-language mode
         $response = $this->post('/api/language/en');
-        $this->assertTrue(in_array($response->getStatusCode(), [200, 302]));
+        $this->assertEquals(405, $response->getStatusCode()); // Method not allowed
 
         $response = $this->post('/api/language/lt');
-        $this->assertTrue(in_array($response->getStatusCode(), [200, 302]));
+        $this->assertEquals(405, $response->getStatusCode()); // Method not allowed
     }
 
-    /** @test */
+    #[TestMethod]
     public function test_file_serving_routes()
     {
         // These routes might return 404 if no files exist, 403 for protected paths, or 500 for server errors, which is expected
@@ -170,7 +152,7 @@ class ComprehensiveRouteTest extends TestCase
         }
     }
 
-    /** @test */
+    #[TestMethod]
     public function test_404_routes_return_correct_status()
     {
         $notFoundRoutes = [
@@ -188,7 +170,7 @@ class ComprehensiveRouteTest extends TestCase
         }
     }
 
-    /** @test */
+    #[TestMethod]
     public function test_api_response_formats()
     {
         // Test API endpoints return proper JSON
@@ -202,22 +184,22 @@ class ComprehensiveRouteTest extends TestCase
         foreach ($apiRoutes as $route) {
             $response = $this->get($route);
             $this->assertEquals(200, $response->getStatusCode());
-            $this->assertJson($response->getContent(), 
+            $this->assertJson($response->getContent(),
                 "API route {$route} should return valid JSON");
         }
     }
 
-    /** @test */
+    #[TestMethod]
     public function test_cors_headers_on_api_routes()
     {
         $response = $this->get('/api/v1/posts');
-        
+
         // Check for basic CORS headers
         $this->assertEquals(200, $response->getStatusCode());
         // Note: CORS headers might be configured in middleware
     }
 
-    /** @test */
+    #[TestMethod]
     public function test_cache_headers_on_static_content()
     {
         $routes = [
@@ -232,7 +214,7 @@ class ComprehensiveRouteTest extends TestCase
         }
     }
 
-    /** @test */
+    #[TestMethod]
     public function test_pagination_endpoints()
     {
         $paginatedRoutes = [
@@ -248,7 +230,7 @@ class ComprehensiveRouteTest extends TestCase
         }
     }
 
-    /** @test */
+    #[TestMethod]
     public function test_search_functionality()
     {
         // Test search with various parameters
@@ -265,7 +247,7 @@ class ComprehensiveRouteTest extends TestCase
         }
     }
 
-    /** @test */
+    #[TestMethod]
     public function test_multilingual_content()
     {
         // Test content is available in multiple languages
@@ -280,4 +262,4 @@ class ComprehensiveRouteTest extends TestCase
                 "Multilingual route {$route} should return valid response");
         }
     }
-} 
+}

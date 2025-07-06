@@ -6,6 +6,7 @@ use App\Models\Post;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Support\Facades\Cache;
+use PHPUnit\Framework\Attributes\Test as TestMethod;
 use Tests\TestCase;
 
 class SiteControllerTest extends TestCase
@@ -42,7 +43,7 @@ class SiteControllerTest extends TestCase
         $post3->slugs()->create(['slug' => 'post-2024-01', 'locale' => 'en', 'active' => true]);
     }
 
-    /** @test */
+    #[TestMethod]
     public function it_returns_health_status()
     {
         $response = $this->getJson('/api/health');
@@ -56,7 +57,7 @@ class SiteControllerTest extends TestCase
             ]);
     }
 
-    /** @test */
+    #[TestMethod]
     public function it_returns_site_configuration()
     {
         $response = $this->getJson('/api/v1/site/config');
@@ -96,7 +97,7 @@ class SiteControllerTest extends TestCase
         $this->assertContains('en', $site['available_locales']);
     }
 
-    /** @test */
+    #[TestMethod]
     public function it_returns_translations()
     {
         $response = $this->getJson('/api/v1/site/translations');
@@ -121,16 +122,20 @@ class SiteControllerTest extends TestCase
         $this->assertEquals('en', $response->json('locale'));
     }
 
-    /** @test */
+    #[TestMethod]
     public function it_returns_translations_for_specific_locale()
     {
-        $response = $this->getJson('/api/v1/site/translations/lt');
-
+        // Only English is supported now
+        $response = $this->getJson('/api/v1/site/translations/en');
         $response->assertStatus(200);
-        $this->assertEquals('lt', $response->json('locale'));
+        $this->assertEquals('en', $response->json('locale'));
+
+        // Lithuanian is no longer supported
+        $response = $this->getJson('/api/v1/site/translations/lt');
+        $response->assertStatus(404);
     }
 
-    /** @test */
+    #[TestMethod]
     public function it_returns_404_for_unsupported_locale()
     {
         $response = $this->getJson('/api/v1/site/translations/fr');
@@ -138,7 +143,7 @@ class SiteControllerTest extends TestCase
         $response->assertStatus(404);
     }
 
-    /** @test */
+    #[TestMethod]
     public function it_returns_archives_by_year()
     {
         $response = $this->getJson('/api/v1/site/archives');
@@ -168,7 +173,7 @@ class SiteControllerTest extends TestCase
         $this->assertCount(2, $year2023['months']); // January and February
     }
 
-    /** @test */
+    #[TestMethod]
     public function it_caches_site_configuration()
     {
         Cache::flush();
@@ -185,34 +190,34 @@ class SiteControllerTest extends TestCase
         $this->assertEquals($response1->json(), $response2->json());
     }
 
-    /** @test */
+    #[TestMethod]
     public function it_includes_proper_cache_headers_for_config()
     {
         $response = $this->getJson('/api/v1/site/config');
 
         $response->assertStatus(200)
-            ->assertHeader('Cache-Control', 'public, max-age=3600'); // 1 hour
+            ->assertHeader('Cache-Control', 'max-age=3600, public'); // 1 hour
     }
 
-    /** @test */
+    #[TestMethod]
     public function it_includes_proper_cache_headers_for_translations()
     {
         $response = $this->getJson('/api/v1/site/translations');
 
         $response->assertStatus(200)
-            ->assertHeader('Cache-Control', 'public, max-age=3600'); // 1 hour
+            ->assertHeader('Cache-Control', 'max-age=3600, public'); // 1 hour
     }
 
-    /** @test */
+    #[TestMethod]
     public function it_includes_proper_cache_headers_for_archives()
     {
         $response = $this->getJson('/api/v1/site/archives');
 
         $response->assertStatus(200)
-            ->assertHeader('Cache-Control', 'public, max-age=1800'); // 30 minutes
+            ->assertHeader('Cache-Control', 'max-age=1800, public'); // 30 minutes
     }
 
-    /** @test */
+    #[TestMethod]
     public function archives_are_ordered_by_year_desc()
     {
         $response = $this->getJson('/api/v1/site/archives');
@@ -226,7 +231,7 @@ class SiteControllerTest extends TestCase
         $this->assertEquals($years->sort()->reverse()->values(), $years->values());
     }
 
-    /** @test */
+    #[TestMethod]
     public function archive_months_are_ordered_by_month_desc()
     {
         $response = $this->getJson('/api/v1/site/archives');

@@ -2,21 +2,18 @@
 
 namespace App\Models;
 
-
-
-
-
-use Illuminate\Database\Eloquent\Model;
 use App\Casts\MetaCast;
 use App\Casts\SettingsCast;
 use App\Traits\Models\HasAdvancedScopes;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Str;
 
 class Category extends Model
 {
-    use HasFactory, HasAdvancedScopes;
+    use HasAdvancedScopes, HasFactory;
 
     protected $fillable = [
         'published',
@@ -30,6 +27,7 @@ class Category extends Model
         'icon',
         'view_count',
         'sort_order',
+        'slug',
     ];
 
     protected $casts = [
@@ -59,6 +57,13 @@ class Category extends Model
     protected static function boot()
     {
         parent::boot();
+
+        // Auto-generate slug on creating
+        static::creating(function ($category) {
+            if (empty($category->slug) && ! empty($category->title)) {
+                $category->slug = Str::slug($category->title);
+            }
+        });
 
         // Auto-increment view count on category access
         static::retrieved(function ($category) {
@@ -102,9 +107,54 @@ class Category extends Model
         return $this->children()->with('allChildren');
     }
 
+    public function slugs()
+    {
+        return $this->hasMany(CategorySlug::class);
+    }
+
+    /**
+     * Translation relationship (EN/LT)
+     */
+    public function translations()
+    {
+        return $this->hasMany(CategoryTranslation::class);
+    }
+
     // ====================
     // ACCESSORS & MUTATORS
     // ====================
+
+    /**
+     * Get the category title from translations
+     */
+    public function getTitleAttribute(): ?string
+    {
+        // Check if title is set directly on the model first
+        if (isset($this->attributes['title']) && $this->attributes['title']) {
+            return $this->attributes['title'];
+        }
+
+        // Get from translations
+        $translation = $this->translations()->where('locale', app()->getLocale())->where('active', true)->first();
+
+        return $translation?->title;
+    }
+
+    /**
+     * Get the category description from translations
+     */
+    public function getDescriptionAttribute(): ?string
+    {
+        // Check if description is set directly on the model first
+        if (isset($this->attributes['description']) && $this->attributes['description']) {
+            return $this->attributes['description'];
+        }
+
+        // Get from translations
+        $translation = $this->translations()->where('locale', app()->getLocale())->where('active', true)->first();
+
+        return $translation?->description;
+    }
 
     /**
      * Get published posts count
@@ -128,6 +178,7 @@ class Category extends Model
     public function getColorStyleAttribute(): string
     {
         $color = $this->color_code ?? '#6366f1';
+
         return "color: {$color}; border-color: {$color};";
     }
 
@@ -138,7 +189,7 @@ class Category extends Model
     {
         $path = [];
         $current = $this;
-        
+
         while ($current) {
             array_unshift($path, [
                 'id' => $current->id,
@@ -147,7 +198,7 @@ class Category extends Model
             ]);
             $current = $current->parent;
         }
-        
+
         return $path;
     }
 
@@ -167,7 +218,7 @@ class Category extends Model
         if (is_string($value) && preg_match('/^#[a-fA-F0-9]{6}$/', $value)) {
             $this->attributes['color_code'] = $value;
         } elseif (is_string($value) && preg_match('/^[a-fA-F0-9]{6}$/', $value)) {
-            $this->attributes['color_code'] = '#' . $value;
+            $this->attributes['color_code'] = '#'.$value;
         }
     }
 
@@ -181,12 +232,12 @@ class Category extends Model
     public function getSlugAttribute(): string
     {
         // If we have a direct slug attribute, use it
-        if (!empty($this->attributes['slug'])) {
+        if (! empty($this->attributes['slug'])) {
             return $this->attributes['slug'];
         }
 
         // Generate from title as fallback
-        return \Str::slug($this->title ?? 'category-' . $this->id);
+        return Str::slug($this->title ?? 'category-'.$this->id);
     }
 
     /**
@@ -195,12 +246,12 @@ class Category extends Model
     public function getAllDescendants()
     {
         $descendants = collect();
-        
+
         foreach ($this->children as $child) {
             $descendants->push($child);
             $descendants = $descendants->merge($child->getAllDescendants());
         }
-        
+
         return $descendants;
     }
 
@@ -211,12 +262,12 @@ class Category extends Model
     {
         $ancestors = collect();
         $current = $this->parent;
-        
+
         while ($current) {
             $ancestors->push($current);
             $current = $current->parent;
         }
-        
+
         return $ancestors;
     }
 
@@ -243,7 +294,7 @@ class Category extends Model
     {
         $settings = $this->settings ?? [];
         $settings['is_featured'] = $featured;
-        
+
         $this->update(['settings' => $settings]);
     }
 
@@ -264,7 +315,7 @@ class Category extends Model
     public function getRecentPosts(int $limit = 10, int $days = 30)
     {
         $date = now()->subDays($days);
-        
+
         return $this->publishedPosts()
             ->where('published_at', '>=', $date)
             ->orderBy('published_at', 'desc')
@@ -292,7 +343,7 @@ class Category extends Model
         if ($parentId) {
             return $query->where('parent_id', $parentId);
         }
-        
+
         return $query->whereNotNull('parent_id');
     }
 
@@ -339,5 +390,13 @@ class Category extends Model
         return $query->orderBy('parent_id')
             ->orderBy('sort_order')
             ->orderBy('position');
+    }
+
+    /**
+     * Get category by slug
+     */
+    public function scopeForSlug(Builder $query, string $slug): Builder
+    {
+        return $query->where('slug', $slug);
     }
 }

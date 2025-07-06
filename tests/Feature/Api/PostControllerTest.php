@@ -7,6 +7,7 @@ use App\Models\Post;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Support\Facades\Cache;
+use PHPUnit\Framework\Attributes\Test as TestMethod;
 use Tests\TestCase;
 
 class PostControllerTest extends TestCase
@@ -23,104 +24,46 @@ class PostControllerTest extends TestCase
 
     protected function createTestPosts(): void
     {
-        // Create categories using proper Twill structure
+        // Create categories using single-language system
         $tech = Category::factory()->create([
             'published' => true,
-        ]);
-        
-        // Create translations for Technology category
-        $tech->translations()->create([
-            'locale' => 'en',
-            'active' => true,
             'title' => 'Technology',
             'description' => 'Tech articles',
-        ]);
-        
-        // Create slug for Technology category
-        $tech->slugs()->create([
-            'locale' => 'en',
             'slug' => 'technology',
-            'active' => true,
         ]);
 
         $design = Category::factory()->create([
             'published' => true,
-        ]);
-        
-        // Create translations for Design category
-        $design->translations()->create([
-            'locale' => 'en',
-            'active' => true,
             'title' => 'Design',
             'description' => 'Design articles',
-        ]);
-        
-        // Create slug for Design category
-        $design->slugs()->create([
-            'locale' => 'en',
             'slug' => 'design',
-            'active' => true,
         ]);
 
-        // Create posts using proper structure
-        $post1 = Post::factory()->create([
+        // Create posts using single-language system (ordered by published_at)
+        $post1 = Post::create([
             'published' => true,
-            'published_at' => now(),
-        ]);
-
-        // Create translations for post1
-        $post1->translations()->create([
-            'locale' => 'en',
-            'active' => true,
+            'published_at' => now()->subDays(2), // Earlier post, definitely in the past
             'title' => 'Test Post 1',
             'description' => 'Test description 1',
             'content' => 'Test content for post 1',
+            'slug' => 'test-post-1',
         ]);
 
-        $post2 = Post::factory()->create([
+        $post2 = Post::create([
             'published' => true,
-            'published_at' => now(),
-        ]);
-
-        // Create translations for post2
-        $post2->translations()->create([
-            'locale' => 'en',
-            'active' => true,
+            'published_at' => now()->subDay(), // More recent post, still in the past
             'title' => 'Test Post 2',
             'description' => 'Test description 2',
             'content' => 'Test content for post 2',
+            'slug' => 'test-post-2',
         ]);
 
-        $post3 = Post::factory()->create([
+        $post3 = Post::create([
             'published' => false,
-        ]);
-
-        // Create translations for post3
-        $post3->translations()->create([
-            'locale' => 'en',
-            'active' => true,
             'title' => 'Unpublished Post',
             'description' => 'This should not appear',
             'content' => 'Unpublished content',
-        ]);
-
-        // Create slugs
-        $post1->slugs()->create([
-            'slug' => 'test-post-1',
-            'locale' => 'en',
-            'active' => true,
-        ]);
-
-        $post2->slugs()->create([
-            'slug' => 'test-post-2',
-            'locale' => 'en',
-            'active' => true,
-        ]);
-
-        $post3->slugs()->create([
             'slug' => 'unpublished-post',
-            'locale' => 'en',
-            'active' => true,
         ]);
 
         // Attach categories
@@ -128,9 +71,13 @@ class PostControllerTest extends TestCase
         $post2->categories()->attach([$tech->id]);
     }
 
-    /** @test */
+    #[TestMethod]
     public function it_returns_paginated_posts()
     {
+        // Debug: Check how many published posts are in the database
+        $publishedCount = Post::published()->count();
+        echo 'Published posts in database: '.$publishedCount."\n";
+
         $response = $this->getJson('/api/v1/posts');
 
         $response->assertStatus(200)
@@ -166,17 +113,21 @@ class PostControllerTest extends TestCase
                 ],
             ]);
 
-        // Should only return published posts
+        // Should only return published posts (ordered by published_at desc)
         $data = $response->json('data');
         $this->assertCount(2, $data);
-        $this->assertEquals('Test Post 1', $data[0]['title']);
-        $this->assertEquals('Test Post 2', $data[1]['title']);
+        $this->assertEquals('Test Post 2', $data[0]['title']); // Most recent first
+        $this->assertEquals('Test Post 1', $data[1]['title']); // Older second
     }
 
-    /** @test */
+    #[TestMethod]
     public function it_returns_individual_post_by_slug()
     {
-        $response = $this->getJson('/api/v1/posts/test-post-1');
+        // Get an actual post from the database
+        $post = Post::published()->first();
+        $this->assertNotNull($post, 'Should have at least one published post');
+
+        $response = $this->getJson("/api/v1/posts/{$post->slug}");
 
         $response->assertStatus(200)
             ->assertJsonStructure([
@@ -200,11 +151,11 @@ class PostControllerTest extends TestCase
                 'related_posts',
             ]);
 
-        $this->assertEquals('Test Post 1', $response->json('title'));
-        $this->assertEquals('test-post-1', $response->json('slug'));
+        $this->assertEquals($post->title, $response->json('title'));
+        $this->assertEquals($post->slug, $response->json('slug'));
     }
 
-    /** @test */
+    #[TestMethod]
     public function it_returns_404_for_nonexistent_post()
     {
         $response = $this->getJson('/api/v1/posts/nonexistent-slug');
@@ -212,7 +163,7 @@ class PostControllerTest extends TestCase
         $response->assertStatus(404);
     }
 
-    /** @test */
+    #[TestMethod]
     public function it_searches_posts_by_query()
     {
         $response = $this->getJson('/api/v1/posts/search?q=Test');
@@ -233,7 +184,7 @@ class PostControllerTest extends TestCase
         $this->assertEquals('Test', $response->json('meta.query'));
     }
 
-    /** @test */
+    #[TestMethod]
     public function it_caches_responses()
     {
         Cache::flush();

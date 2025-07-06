@@ -46,7 +46,7 @@ class PostResource extends JsonResource
                         'description' => $this->description,
                         'content' => $this->content,
                         'slug' => $this->slug,
-                    ]
+                    ],
                 ];
             }),
 

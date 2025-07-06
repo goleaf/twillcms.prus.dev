@@ -17,7 +17,7 @@
             <ExclamationTriangleIcon class="h-5 w-5 text-red-400 mt-0.5 mr-3 flex-shrink-0" />
             <div class="flex-1">
               <h3 class="text-sm font-medium text-red-800 mb-1">
-                Something went wrong
+                <!-- {{ $t('errors.server_error') }} -->
               </h3>
               <div class="text-sm text-red-700">
                 <p v-for="error in errorMessages" :key="error" class="mb-1 last:mb-0">

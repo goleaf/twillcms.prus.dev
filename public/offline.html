@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>You're Offline - NewsHub</title>
+    <meta name="theme-color" content="#3B82F6">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            line-height: 1.6;
+        }
+        
+        .container {
+            text-align: center;
+            max-width: 500px;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.1);
+        }
+        
+        .icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+        
+        p {
+            font-size: 1.1rem;
+            margin-bottom: 1.5rem;
+            opacity: 0.9;
+        }
+        
+        .actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 0.75rem 1.5rem;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+        
+        button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+        
+        .status {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        
+        .status.online {
+            background: rgba(34, 197, 94, 0.3);
+        }
+        
+        .status.offline {
+            background: rgba(239, 68, 68, 0.3);
+        }
+        
+        .cached-content {
+            margin-top: 2rem;
+            text-align: left;
+        }
+        
+        .cached-content h3 {
+            margin-bottom: 1rem;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .cached-list {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            padding: 1rem;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .cached-item {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            transition: opacity 0.3s ease;
+        }
+        
+        .cached-item:hover {
+            opacity: 0.8;
+        }
+        
+        .cached-item:last-child {
+            border-bottom: none;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                margin: 1rem;
+                padding: 1.5rem;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">📱</div>
+        <h1>You're Offline</h1>
+        <p>It looks like you're not connected to the internet. Don't worry, you can still browse some content from your cache.</p>
+        
+        <div class="actions">
+            <button onclick="tryReconnect()">Try Again</button>
+            <button onclick="goHome()">Go to Home</button>
+        </div>
+        
+        <div class="status" id="connectionStatus">
+            <span id="statusText">Checking connection...</span>
+        </div>
+        
+        <div class="cached-content" id="cachedContent" style="display: none;">
+            <h3>Available Cached Content</h3>
+            <div class="cached-list" id="cachedList">
+                <!-- Cached content will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Check online status
+        function updateConnectionStatus() {
+            const statusEl = document.getElementById('connectionStatus');
+            const statusText = document.getElementById('statusText');
+            
+            if (navigator.onLine) {
+                statusEl.className = 'status online';
+                statusText.textContent = '✅ Connection restored! You can refresh the page.';
+            } else {
+                statusEl.className = 'status offline';
+                statusText.textContent = '❌ No internet connection detected.';
+            }
+        }
+        
+        // Try to reconnect
+        function tryReconnect() {
+            updateConnectionStatus();
+            
+            if (navigator.onLine) {
+                // Try to go back to the original page
+                if (document.referrer) {
+                    window.location.href = document.referrer;
+                } else {
+                    window.location.href = '/';
+                }
+            } else {
+                // Show a message that we're still offline
+                const button = event.target;
+                const originalText = button.textContent;
+                button.textContent = 'Still offline...';
+                button.style.background = 'rgba(239, 68, 68, 0.3)';
+                
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.style.background = '';
+                }, 2000);
+            }
+        }
+        
+        // Go to home page
+        function goHome() {
+            window.location.href = '/';
+        }
+        
+        // Load cached content
+        async function loadCachedContent() {
+            if ('caches' in window) {
+                try {
+                    const cacheNames = await caches.keys();
+                    const cachedUrls = [];
+                    
+                    for (const cacheName of cacheNames) {
+                        const cache = await caches.open(cacheName);
+                        const requests = await cache.keys();
+                        
+                        for (const request of requests) {
+                            const url = new URL(request.url);
+                            if (url.origin === location.origin && 
+                                (url.pathname.startsWith('/api/v1/posts') || 
+                                 url.pathname.startsWith('/api/v1/categories'))) {
+                                cachedUrls.push({
+                                    url: request.url,
+                                    path: url.pathname
+                                });
+                            }
+                        }
+                    }
+                    
+                    if (cachedUrls.length > 0) {
+                        const cachedContent = document.getElementById('cachedContent');
+                        const cachedList = document.getElementById('cachedList');
+                        
+                        cachedContent.style.display = 'block';
+                        
+                        cachedList.innerHTML = cachedUrls.map(item => 
+                            `<div class="cached-item" onclick="loadCachedItem('${item.url}')">
+                                ${item.path}
+                            </div>`
+                        ).join('');
+                    }
+                } catch (error) {
+                    console.error('Error loading cached content:', error);
+                }
+            }
+        }
+        
+        // Load cached item
+        async function loadCachedItem(url) {
+            try {
+                const cache = await caches.open('twillcms-dynamic-v1.0.0');
+                const response = await cache.match(url);
+                
+                if (response) {
+                    const data = await response.json();
+                    
+                    // Create a simple display for the cached data
+                    const displayWindow = window.open('', '_blank');
+                    displayWindow.document.write(`
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                            <title>Cached Content</title>
+                            <style>
+                                body { font-family: Arial, sans-serif; padding: 20px; }
+                                pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+                            </style>
+                        </head>
+                        <body>
+                            <h1>Cached Content</h1>
+                            <p><strong>URL:</strong> ${url}</p>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </body>
+                        </html>
+                    `);
+                }
+            } catch (error) {
+                console.error('Error loading cached item:', error);
+            }
+        }
+        
+        // Listen for online/offline events
+        window.addEventListener('online', updateConnectionStatus);
+        window.addEventListener('offline', updateConnectionStatus);
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            updateConnectionStatus();
+            loadCachedContent();
+        });
+        
+        // Auto-refresh when connection is restored
+        let reconnectInterval;
+        
+        function startReconnectCheck() {
+            reconnectInterval = setInterval(() => {
+                if (navigator.onLine) {
+                    clearInterval(reconnectInterval);
+                    
+                    // Show reconnection message
+                    const container = document.querySelector('.container');
+                    const reconnectMsg = document.createElement('div');
+                    reconnectMsg.innerHTML = `
+                        <div style="
+                            position: fixed;
+                            top: 20px;
+                            right: 20px;
+                            background: rgba(34, 197, 94, 0.9);
+                            color: white;
+                            padding: 1rem;
+                            border-radius: 10px;
+                            z-index: 1000;
+                            animation: slideInRight 0.5s ease-out;
+                        ">
+                            ✅ Connection restored! <br>
+                            <small>Redirecting...</small>
+                        </div>
+                    `;
+                    document.body.appendChild(reconnectMsg);
+                    
+                    // Redirect after a short delay
+                    setTimeout(() => {
+                        if (document.referrer) {
+                            window.location.href = document.referrer;
+                        } else {
+                            window.location.href = '/';
+                        }
+                    }, 2000);
+                }
+            }, 3000);
+        }
+        
+        // Start checking for reconnection
+        if (!navigator.onLine) {
+            startReconnectCheck();
+        }
+    </script>
+</body>
+</html> 

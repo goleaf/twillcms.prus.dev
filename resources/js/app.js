@@ -1,4 +1,119 @@
 import './bootstrap';
+import './app.ts';
+import { createApp } from 'vue'
+import { createRouter, createWebHistory } from 'vue-router'
+import axios from 'axios'
+import { createI18n } from 'vue-i18n'
+import en from '../lang/en.json'
+
+// Import components
+import App from './components/App.vue'
+import Home from './components/pages/Home.vue'
+import PostDetail from './components/pages/PostDetail.vue'
+import CategoryDetail from './components/pages/CategoryDetail.vue'
+import CategoriesIndex from './components/pages/CategoriesIndex.vue'
+import SearchResults from './components/pages/SearchResults.vue'
+import ArchiveIndex from './components/pages/ArchiveIndex.vue'
+import NotFound from './components/pages/NotFound.vue'
+
+// Configure axios
+axios.defaults.baseURL = '/api/v1'
+axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest'
+axios.defaults.headers.common['Accept'] = 'application/json'
+
+// Create router
+const routes = [
+  {
+    path: '/',
+    name: 'home',
+    component: Home,
+    meta: { title: 'Home' }
+  },
+  {
+    path: '/posts/:slug',
+    name: 'post.detail',
+    component: PostDetail,
+    meta: { title: 'Post' }
+  },
+  {
+    path: '/categories',
+    name: 'categories.index',
+    component: CategoriesIndex,
+    meta: { title: 'Categories' }
+  },
+  {
+    path: '/categories/:slug',
+    name: 'category.detail',
+    component: CategoryDetail,
+    meta: { title: 'Category' }
+  },
+  {
+    path: '/search',
+    name: 'search',
+    component: SearchResults,
+    meta: { title: 'Search Results' }
+  },
+  {
+    path: '/archives',
+    name: 'archives.index',
+    component: ArchiveIndex,
+    meta: { title: 'Archives' }
+  },
+  {
+    path: '/archives/:year/:month?',
+    name: 'archives.detail',
+    component: ArchiveIndex,
+    meta: { title: 'Archive' }
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'not-found',
+    component: NotFound,
+    meta: { title: 'Page Not Found' }
+  }
+]
+
+const router = createRouter({
+  history: createWebHistory(),
+  routes,
+  scrollBehavior(to, from, savedPosition) {
+    if (savedPosition) {
+      return savedPosition
+    } else {
+      return { top: 0 }
+    }
+  }
+})
+
+// Global navigation guard for title updates
+router.beforeEach((to, from, next) => {
+  document.title = to.meta.title ? `${to.meta.title} - News Portal` : 'News Portal'
+  next()
+})
+
+// Set up i18n
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  fallbackLocale: 'en',
+  messages: { en },
+  globalInjection: true
+})
+
+// Create Vue app
+const app = createApp(App)
+
+// Install router
+app.use(router)
+// Install i18n
+app.use(i18n)
+
+// Global properties
+app.config.globalProperties.$http = axios
+app.config.globalProperties.$router = router
+
+// Mount app
+app.mount('#app')
 
 // Mobile Menu Toggle
 document.addEventListener('DOMContentLoaded', function() {

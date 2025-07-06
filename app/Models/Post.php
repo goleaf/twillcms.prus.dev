@@ -2,17 +2,17 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use App\Casts\MetaCast;
 use App\Casts\SettingsCast;
 use App\Traits\Models\HasAdvancedScopes;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Builder;
-use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class Post extends Model
 {
-    use HasFactory, HasAdvancedScopes;
+    use HasAdvancedScopes, HasFactory;
 
     protected $fillable = [
         'published',
@@ -60,14 +60,14 @@ class Post extends Model
 
         // Auto-generate slug on creating
         static::creating(function ($post) {
-            if (empty($post->slug) && !empty($post->title)) {
-                $post->slug = \Str::slug($post->title);
+            if (empty($post->slug) && ! empty($post->title)) {
+                $post->slug = Str::slug($post->title);
             }
         });
 
         // Auto-increment view count on model retrieval
         static::retrieved(function ($post) {
-            if (request()->route() && !request()->route()->action['uses'] instanceof \Closure) {
+            if (request()->route() && ! request()->route()->action['uses'] instanceof \Closure) {
                 $post->increment('view_count');
             }
         });
@@ -82,9 +82,17 @@ class Post extends Model
         return $this->belongsToMany(Category::class, 'post_category');
     }
 
-    public function author()
+    public function slugs()
     {
-        return $this->belongsTo(User::class, 'author_id');
+        return $this->hasMany(PostSlug::class);
+    }
+
+    /**
+     * Translation relationship (EN/LT)
+     */
+    public function translations()
+    {
+        return $this->hasMany(PostTranslation::class);
     }
 
     // ====================
@@ -92,24 +100,72 @@ class Post extends Model
     // ====================
 
     /**
+     * Get the post title from translations
+     */
+    public function getTitleAttribute(): ?string
+    {
+        // Check if title is set directly on the model first
+        if (isset($this->attributes['title']) && $this->attributes['title']) {
+            return $this->attributes['title'];
+        }
+
+        // Get from translations
+        $translation = $this->translations()->where('locale', app()->getLocale())->where('active', true)->first();
+
+        return $translation?->title;
+    }
+
+    /**
+     * Get the post description from translations
+     */
+    public function getDescriptionAttribute(): ?string
+    {
+        // Check if description is set directly on the model first
+        if (isset($this->attributes['description']) && $this->attributes['description']) {
+            return $this->attributes['description'];
+        }
+
+        // Get from translations
+        $translation = $this->translations()->where('locale', app()->getLocale())->where('active', true)->first();
+
+        return $translation?->description;
+    }
+
+    /**
+     * Get the post content from translations
+     */
+    public function getContentAttribute(): ?string
+    {
+        // Check if content is set directly on the model first
+        if (isset($this->attributes['content']) && $this->attributes['content']) {
+            return $this->attributes['content'];
+        }
+
+        // Get from translations
+        $translation = $this->translations()->where('locale', app()->getLocale())->where('active', true)->first();
+
+        return $translation?->content;
+    }
+
+    /**
      * Get excerpt - use override or auto-generate
      */
     public function getExcerptAttribute(): string
     {
         $override = $this->excerpt_override;
-        
-        if (!empty($override)) {
+
+        if (! empty($override)) {
             return $override;
         }
 
         $content = strip_tags($this->content ?? '');
         $words = explode(' ', $content);
-        
+
         if (count($words) <= 30) {
             return $content;
         }
-        
-        return implode(' ', array_slice($words, 0, 30)) . '...';
+
+        return implode(' ', array_slice($words, 0, 30)).'...';
     }
 
     /**
@@ -119,7 +175,7 @@ class Post extends Model
     {
         // Check for override first
         $override = $this->settings['reading_time_override'] ?? null;
-        
+
         if ($override && is_numeric($override)) {
             return (int) $override;
         }
@@ -169,12 +225,12 @@ class Post extends Model
     {
         // Check for override first
         $override = $this->settings['author_override'] ?? null;
-        
-        if (!empty($override)) {
+
+        if (! empty($override)) {
             return $override;
         }
 
-        return $this->author?->name ?? 'Anonymous';
+        return 'Anonymous'; // No user system
     }
 
     /**
@@ -202,12 +258,18 @@ class Post extends Model
     public function getSlugAttribute(): string
     {
         // If we have a direct slug attribute, use it
-        if (!empty($this->attributes['slug'])) {
+        if (! empty($this->attributes['slug'])) {
             return $this->attributes['slug'];
         }
 
+        // Check slugs relationship
+        $slug = $this->slugs()->where('locale', app()->getLocale())->where('active', true)->first();
+        if ($slug) {
+            return $slug->slug;
+        }
+
         // Generate from title as fallback
-        return \Str::slug($this->title ?? 'post-' . $this->id);
+        return Str::slug($this->title ?? 'post-'.$this->id);
     }
 
     /**
@@ -269,7 +331,7 @@ class Post extends Model
     public function getRelatedPosts(int $limit = 5)
     {
         $categoryIds = $this->categories()->pluck('id');
-        
+
         return static::published()
             ->whereHas('categories', function ($query) use ($categoryIds) {
                 $query->whereIn('id', $categoryIds);
@@ -290,14 +352,6 @@ class Post extends Model
     }
 
     /**
-     * Scope by author
-     */
-    public function scopeByAuthor(Builder $query, $authorId): Builder
-    {
-        return $query->where('author_id', $authorId);
-    }
-
-    /**
      * Scope high engagement posts
      */
     public function scopeHighEngagement(Builder $query, int $minViews = 100): Builder
@@ -311,5 +365,13 @@ class Post extends Model
     public function scopeWithExternalUrl(Builder $query): Builder
     {
         return $query->whereNotNull('settings->external_url');
+    }
+
+    /**
+     * Get post by slug
+     */
+    public function scopeForSlug(Builder $query, string $slug): Builder
+    {
+        return $query->where('slug', $slug);
     }
 }

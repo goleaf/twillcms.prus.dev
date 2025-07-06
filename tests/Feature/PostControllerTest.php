@@ -14,24 +14,39 @@ class PostControllerTest extends TestCase
     {
         $post = Post::factory()->create([
             'published' => true,
+            'title' => 'Test Post',
         ]);
 
-        $response = $this->get(route('twill.posts.index'));
+        $response = $this->get('/api/v1/posts');
 
         $response->assertStatus(200);
-        $response->assertSee($post->title);
+        $response->assertJsonStructure([
+            'data' => [
+                '*' => [
+                    'id',
+                    'title',
+                    'slug',
+                ],
+            ],
+        ]);
     }
 
-    public function test_can_create_post()
+    public function test_can_show_individual_post()
     {
-        $response = $this->post(route('twill.posts.store'), [
-            'title' => ['en' => 'Test Post'],
+        $post = Post::factory()->create([
             'published' => true,
+            'title' => 'Test Post',
+            'slug' => 'test-post',
         ]);
 
-        $response->assertStatus(302);
-        $this->assertDatabaseHas('posts', [
-            'published' => true,
+        $response = $this->get("/api/v1/posts/{$post->slug}");
+
+        $response->assertStatus(200);
+        $response->assertJsonStructure([
+            'id',
+            'title',
+            'slug',
+            'content',
         ]);
     }
 }

@@ -8,7 +8,7 @@
             {{ siteStore.siteName }}
           </h3>
           <p class="text-gray-300 mb-6 leading-relaxed max-w-md">
-            {{ siteStore.siteDescription || t('blog.site_description') }}
+            {{ siteStore.siteDescription || 'A modern blog built with TwillCMS and Vue.js' }}
           </p>
           
           <!-- Social Links (if available) -->
@@ -63,7 +63,7 @@
 
         <!-- Popular Categories -->
         <div>
-          <h4 class="text-lg font-semibold mb-4 text-white">{{ t('categories.popular_categories') }}</h4>
+          <h4 class="text-lg font-semibold mb-4 text-white">Popular Categories</h4>
           <ul class="space-y-2">
             <li v-for="category in categoryStore.popularCategories.slice(0, 5)" :key="category.id">
               <router-link
@@ -87,25 +87,25 @@
         <div class="flex flex-col md:flex-row justify-between items-center">
           <div class="text-center md:text-left mb-4 md:mb-0">
             <p class="text-gray-300">
-              &copy; {{ currentYear }} {{ siteStore.siteName }}. {{ t('blog.all_rights_reserved') }}
+              &copy; {{ currentYear }} {{ siteStore.siteName }}. All rights reserved.
             </p>
           </div>
           
-          <div class="flex items-center space-x-4 text-sm text-gray-400">
-            <span>{{ t('blog.made_with_twill') }}</span>
-            <div class="flex items-center space-x-2">
-              <span>{{ t('navigation.language') }}:</span>
-              <button
-                v-for="locale in availableLocales"
-                :key="locale"
-                @click="setLocale(locale)"
-                class="px-2 py-1 rounded transition-colors duration-200"
-                :class="locale === currentLocale 
-                  ? 'bg-blue-600 text-white' 
-                  : 'text-gray-400 hover:text-white hover:bg-gray-700'"
+          <div class="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-6 text-sm text-gray-400">
+            <span>Made with ❤️ using TwillCMS</span>
+            <div class="flex items-center space-x-4">
+              <router-link
+                to="/about"
+                class="text-gray-400 hover:text-blue-400 transition-colors duration-200"
               >
-                {{ locale.toUpperCase() }}
-              </button>
+                About
+              </router-link>
+              <router-link
+                to="/contact"
+                class="text-gray-400 hover:text-blue-400 transition-colors duration-200"
+              >
+                Contact
+              </router-link>
             </div>
           </div>
         </div>
@@ -131,7 +131,7 @@ import {
 
 const siteStore = useSiteStore();
 const categoryStore = useCategoryStore();
-const { t, currentLocale, availableLocales, setLocale } = useTranslations();
+const { t } = useTranslations();
 
 const currentYear = computed(() => new Date().getFullYear());
 

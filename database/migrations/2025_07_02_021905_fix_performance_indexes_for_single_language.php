@@ -15,14 +15,14 @@ return new class extends Migration
         $translationIndexes = [
             'post_translations' => [
                 'idx_post_translations_locale_active',
-                'idx_post_translations_post_locale', 
+                'idx_post_translations_post_locale',
                 'idx_post_translations_title',
-                'idx_post_translations_content_search'
+                'idx_post_translations_content_search',
             ],
             'category_translations' => [
                 'idx_category_translations_locale',
-                'idx_category_translations_category_locale'
-            ]
+                'idx_category_translations_category_locale',
+            ],
         ];
 
         foreach ($translationIndexes as $table => $indexes) {
@@ -45,7 +45,7 @@ return new class extends Migration
             } catch (\Exception $e) {
                 // Index may already exist
             }
-            
+
             // Enhanced published content search
             try {
                 DB::statement('CREATE INDEX idx_posts_published_title ON posts(published, title)');
@@ -73,11 +73,11 @@ return new class extends Migration
         $singleLanguageIndexes = [
             'posts' => [
                 'idx_posts_title_desc',
-                'idx_posts_published_title'
+                'idx_posts_published_title',
             ],
             'categories' => [
-                'idx_categories_title_published'
-            ]
+                'idx_categories_title_published',
+            ],
         ];
 
         foreach ($singleLanguageIndexes as $table => $indexes) {

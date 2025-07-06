@@ -32,8 +32,8 @@ class SettingsCast implements CastsAttributes
         }
 
         $decoded = json_decode($value, true);
-        
-        if (!is_array($decoded)) {
+
+        if (! is_array($decoded)) {
             return $this->defaults;
         }
 
@@ -59,13 +59,13 @@ class SettingsCast implements CastsAttributes
             }
         }
 
-        if (!is_array($value)) {
+        if (! is_array($value)) {
             return json_encode($this->defaults);
         }
 
         // Merge with defaults and filter valid keys
         $settings = array_merge($this->defaults, array_intersect_key($value, $this->defaults));
-        
+
         return json_encode($settings);
     }
-} 
+}

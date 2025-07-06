@@ -14,8 +14,8 @@ return new class extends Migration
         // Drop translation tables since we're moving to single language (English only)
         Schema::dropIfExists('post_translations');
         Schema::dropIfExists('category_translations');
-        
-        // Note: We keep the main posts and categories tables as they now contain 
+
+        // Note: We keep the main posts and categories tables as they now contain
         // the English content directly without needing translation relationships
     }
 
@@ -36,7 +36,7 @@ return new class extends Migration
             $table->text('excerpt_override')->nullable();
             $table->string('featured_image_caption')->nullable();
             $table->timestamps();
-            
+
             $table->foreign('post_id')->references('id')->on('posts')->onDelete('cascade');
             $table->unique(['post_id', 'locale']);
             $table->index(['locale', 'active']);
@@ -51,7 +51,7 @@ return new class extends Migration
             $table->string('title')->nullable();
             $table->text('description')->nullable();
             $table->timestamps();
-            
+
             $table->foreign('category_id')->references('id')->on('categories')->onDelete('cascade');
             $table->unique(['category_id', 'locale']);
             $table->index(['locale', 'active']);
