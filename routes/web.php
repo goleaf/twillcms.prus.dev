@@ -1,38 +1,45 @@
 <?php
 
-use App\Http\Controllers\Admin\CategoryController;
-use App\Http\Controllers\Admin\PostController;
-use App\Http\Controllers\AdminController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\NewsController;
+use App\Http\Controllers\ArticleController;
+use App\Http\Controllers\TagController;
+use App\Http\Controllers\CategoryController;
 
 /*
 |--------------------------------------------------------------------------
 | Web Routes
 |--------------------------------------------------------------------------
+|
+| Here is where you can register web routes for your application. These
+| routes are loaded by the RouteServiceProvider and all of them will
+| be assigned to the "web" middleware group. Make something great!
+|
 */
 
-// SPA Routes - All frontend routes handled by Vue.js
-Route::get('/', function () {
-    return view('spa');
-})->name('spa.home');
+// News Portal Frontend Routes
+Route::get('/', [NewsController::class, 'index'])->name('home');
+Route::get('/news', [NewsController::class, 'index'])->name('news.index');
+Route::get('/news/{slug}', [ArticleController::class, 'show'])->name('news.show');
 
-Route::get('/{any}', function () {
-    return view('spa');
-})->where('any', '^(?!admin|api).*$')->name('spa.fallback');
+// Tags (unlimited categories)
+Route::get('/tags', [TagController::class, 'index'])->name('tags.index');
+Route::get('/tags/{tag}', [TagController::class, 'show'])->name('tags.show');
 
-/*
-|--------------------------------------------------------------------------
-| Admin Routes (No Authentication Required)
-|--------------------------------------------------------------------------
-*/
+// Categories (legacy support)
+Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
+Route::get('/categories/{slug}', [CategoryController::class, 'show'])->name('categories.show');
 
+// Search functionality
+Route::get('/search', [NewsController::class, 'search'])->name('search');
+
+// Admin Routes
 Route::prefix('admin')->name('admin.')->group(function () {
-    // Dashboard
-    Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
-
-    // Posts Management
-    Route::resource('posts', PostController::class);
-
-    // Categories Management
-    Route::resource('categories', CategoryController::class);
+    Route::get('/', function () {
+        return view('admin.dashboard');
+    })->name('dashboard');
+    
+    Route::resource('posts', App\Http\Controllers\Admin\PostController::class);
+    Route::resource('categories', App\Http\Controllers\Admin\CategoryController::class);
+    Route::resource('tags', App\Http\Controllers\Admin\TagController::class);
 });

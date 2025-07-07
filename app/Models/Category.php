@@ -2,9 +2,6 @@
 
 namespace App\Models;
 
-use App\Casts\MetaCast;
-use App\Casts\SettingsCast;
-use App\Traits\Models\HasAdvancedScopes;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -13,42 +10,34 @@ use Illuminate\Support\Str;
 
 class Category extends Model
 {
-    use HasAdvancedScopes, HasFactory;
+    use HasFactory;
 
     protected $fillable = [
         'published',
         'title',
+        'slug',
         'description',
         'position',
-        'meta',
-        'settings',
         'parent_id',
         'color_code',
         'icon',
         'view_count',
         'sort_order',
-        'slug',
     ];
 
     protected $casts = [
         'published' => 'boolean',
-        'meta' => MetaCast::class,
-        'settings' => SettingsCast::class,
         'view_count' => 'integer',
         'parent_id' => 'integer',
         'sort_order' => 'integer',
+        'position' => 'integer',
     ];
 
-    public $slugAttributes = [
-        'title',
-    ];
-
-    protected $appends = [
-        'posts_count',
-        'is_featured',
-        'color_style',
-        'breadcrumb_path',
-        'child_count',
+    protected $attributes = [
+        'published' => true,
+        'view_count' => 0,
+        'position' => 0,
+        'sort_order' => 0,
     ];
 
     /**
@@ -82,11 +71,6 @@ class Category extends Model
         return $this->belongsToMany(Post::class, 'post_category');
     }
 
-    public function publishedPosts(): BelongsToMany
-    {
-        return $this->posts()->published();
-    }
-
     public function parent()
     {
         return $this->belongsTo(Category::class, 'parent_id');
@@ -97,122 +81,55 @@ class Category extends Model
         return $this->hasMany(Category::class, 'parent_id');
     }
 
-    public function publishedChildren()
+    // ====================
+    // SCOPES
+    // ====================
+
+    public function scopePublished(Builder $query): Builder
     {
-        return $this->children()->published();
+        return $query->where('published', true);
     }
 
-    public function allChildren()
+    public function scopeRoot(Builder $query): Builder
     {
-        return $this->children()->with('allChildren');
+        return $query->whereNull('parent_id');
     }
 
-    public function slugs()
+    public function scopeChildren(Builder $query, $parentId = null): Builder
     {
-        return $this->hasMany(CategorySlug::class);
+        if ($parentId) {
+            return $query->where('parent_id', $parentId);
+        }
+        return $query->whereNotNull('parent_id');
     }
 
-    /**
-     * Translation relationship (EN/LT)
-     */
-    public function translations()
+    public function scopeWithPosts(Builder $query): Builder
     {
-        return $this->hasMany(CategoryTranslation::class);
+        return $query->has('posts');
+    }
+
+    public function scopeForSlug(Builder $query, string $slug): Builder
+    {
+        return $query->where('slug', $slug);
     }
 
     // ====================
     // ACCESSORS & MUTATORS
     // ====================
 
-    /**
-     * Get the category title from translations
-     */
-    public function getTitleAttribute(): ?string
+    public function getSlugAttribute(): string
     {
-        // Check if title is set directly on the model first
-        if (isset($this->attributes['title']) && $this->attributes['title']) {
-            return $this->attributes['title'];
+        if (! empty($this->attributes['slug'])) {
+            return $this->attributes['slug'];
         }
-
-        // Get from translations
-        $translation = $this->translations()->where('locale', app()->getLocale())->where('active', true)->first();
-
-        return $translation?->title;
+        return Str::slug($this->title ?? 'category-'.$this->id);
     }
 
-    /**
-     * Get the category description from translations
-     */
-    public function getDescriptionAttribute(): ?string
+    public function setSlugAttribute($value): void
     {
-        // Check if description is set directly on the model first
-        if (isset($this->attributes['description']) && $this->attributes['description']) {
-            return $this->attributes['description'];
-        }
-
-        // Get from translations
-        $translation = $this->translations()->where('locale', app()->getLocale())->where('active', true)->first();
-
-        return $translation?->description;
+        $this->attributes['slug'] = Str::slug($value);
     }
 
-    /**
-     * Get published posts count
-     */
-    public function getPostsCountAttribute(): int
-    {
-        return $this->publishedPosts()->count();
-    }
-
-    /**
-     * Check if category is featured
-     */
-    public function getIsFeaturedAttribute(): bool
-    {
-        return $this->settings['is_featured'] ?? false;
-    }
-
-    /**
-     * Get color style for CSS
-     */
-    public function getColorStyleAttribute(): string
-    {
-        $color = $this->color_code ?? '#6366f1';
-
-        return "color: {$color}; border-color: {$color};";
-    }
-
-    /**
-     * Get breadcrumb path
-     */
-    public function getBreadcrumbPathAttribute(): array
-    {
-        $path = [];
-        $current = $this;
-
-        while ($current) {
-            array_unshift($path, [
-                'id' => $current->id,
-                'title' => $current->title,
-                'slug' => $current->slug,
-            ]);
-            $current = $current->parent;
-        }
-
-        return $path;
-    }
-
-    /**
-     * Get count of direct children
-     */
-    public function getChildCountAttribute(): int
-    {
-        return $this->publishedChildren()->count();
-    }
-
-    /**
-     * Set color code with validation
-     */
     public function setColorCodeAttribute($value): void
     {
         if (is_string($value) && preg_match('/^#[a-fA-F0-9]{6}$/', $value)) {
@@ -223,180 +140,16 @@ class Category extends Model
     }
 
     // ====================
-    // CUSTOM METHODS
+    // METHODS
     // ====================
 
-    /**
-     * Get slug ensuring we have a fallback
-     */
-    public function getSlugAttribute(): string
+    public function getRouteKeyName(): string
     {
-        // If we have a direct slug attribute, use it
-        if (! empty($this->attributes['slug'])) {
-            return $this->attributes['slug'];
-        }
-
-        // Generate from title as fallback
-        return Str::slug($this->title ?? 'category-'.$this->id);
+        return 'slug';
     }
 
-    /**
-     * Get all descendants (recursive children)
-     */
-    public function getAllDescendants()
+    public function incrementViews(): void
     {
-        $descendants = collect();
-
-        foreach ($this->children as $child) {
-            $descendants->push($child);
-            $descendants = $descendants->merge($child->getAllDescendants());
-        }
-
-        return $descendants;
-    }
-
-    /**
-     * Get all ancestors (recursive parents)
-     */
-    public function getAllAncestors()
-    {
-        $ancestors = collect();
-        $current = $this->parent;
-
-        while ($current) {
-            $ancestors->push($current);
-            $current = $current->parent;
-        }
-
-        return $ancestors;
-    }
-
-    /**
-     * Check if this category is an ancestor of the given category
-     */
-    public function isAncestorOf(Category $category): bool
-    {
-        return $category->getAllAncestors()->contains('id', $this->id);
-    }
-
-    /**
-     * Check if this category is a descendant of the given category
-     */
-    public function isDescendantOf(Category $category): bool
-    {
-        return $this->getAllAncestors()->contains('id', $category->id);
-    }
-
-    /**
-     * Mark category as featured
-     */
-    public function markAsFeatured(bool $featured = true): void
-    {
-        $settings = $this->settings ?? [];
-        $settings['is_featured'] = $featured;
-
-        $this->update(['settings' => $settings]);
-    }
-
-    /**
-     * Get popular posts from this category
-     */
-    public function getPopularPosts(int $limit = 10)
-    {
-        return $this->publishedPosts()
-            ->orderBy('view_count', 'desc')
-            ->limit($limit)
-            ->get();
-    }
-
-    /**
-     * Get recent posts from this category
-     */
-    public function getRecentPosts(int $limit = 10, int $days = 30)
-    {
-        $date = now()->subDays($days);
-
-        return $this->publishedPosts()
-            ->where('published_at', '>=', $date)
-            ->orderBy('published_at', 'desc')
-            ->limit($limit)
-            ->get();
-    }
-
-    // ====================
-    // QUERY SCOPES
-    // ====================
-
-    /**
-     * Scope for root categories (no parent)
-     */
-    public function scopeRoot(Builder $query): Builder
-    {
-        return $query->whereNull('parent_id');
-    }
-
-    /**
-     * Scope for child categories
-     */
-    public function scopeChildren(Builder $query, $parentId = null): Builder
-    {
-        if ($parentId) {
-            return $query->where('parent_id', $parentId);
-        }
-
-        return $query->whereNotNull('parent_id');
-    }
-
-    /**
-     * Scope for categories with posts
-     */
-    public function scopeWithPosts(Builder $query): Builder
-    {
-        return $query->has('publishedPosts');
-    }
-
-    /**
-     * Scope for categories without posts
-     */
-    public function scopeWithoutPosts(Builder $query): Builder
-    {
-        return $query->doesntHave('publishedPosts');
-    }
-
-    /**
-     * Scope for navigation (published with position ordering)
-     */
-    public function scopeForNavigation(Builder $query): Builder
-    {
-        return $query->published()
-            ->orderBy('sort_order')
-            ->orderBy('position')
-            ->orderBy('title');
-    }
-
-    /**
-     * Scope by color
-     */
-    public function scopeByColor(Builder $query, string $color): Builder
-    {
-        return $query->where('color_code', $color);
-    }
-
-    /**
-     * Scope for hierarchical ordering
-     */
-    public function scopeHierarchical(Builder $query): Builder
-    {
-        return $query->orderBy('parent_id')
-            ->orderBy('sort_order')
-            ->orderBy('position');
-    }
-
-    /**
-     * Get category by slug
-     */
-    public function scopeForSlug(Builder $query, string $slug): Builder
-    {
-        return $query->where('slug', $slug);
+        $this->increment('view_count');
     }
 }

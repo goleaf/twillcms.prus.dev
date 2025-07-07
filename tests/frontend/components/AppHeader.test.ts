@@ -63,7 +63,46 @@ describe('AppHeader', () => {
     router = createTestRouter()
     pinia = createPinia()
   })
+import { describe, it, expect } from 'vitest';
+import { mount } from '@vue/test-utils';
+import AppHeader from '@/components/AppHeader.vue';
 
+describe('AppHeader', () => {
+  it('renders properly', () => {
+    const wrapper = mount(AppHeader, {
+      props: {
+        title: 'Test App'
+      }
+    });
+
+    expect(wrapper.text()).toContain('Test App');
+  });
+
+  it('emits toggle-search when search button is clicked', async () => {
+    const wrapper = mount(AppHeader);
+
+    const searchButton = wrapper.find('.search-button');
+    await searchButton.trigger('click');
+
+    expect(wrapper.emitted('toggle-search')).toBeTruthy();
+  });
+
+  it('displays default title when no title prop is provided', () => {
+    const wrapper = mount(AppHeader);
+
+    expect(wrapper.text()).toContain('My App');
+  });
+
+  it('renders navigation slot', () => {
+    const wrapper = mount(AppHeader, {
+      slots: {
+        navigation: '<a href="/home">Home</a>'
+      }
+    });
+
+    expect(wrapper.html()).toContain('<a href="/home">Home</a>');
+  });
+});
   const createWrapper = async (routePath = '/') => {
     router.push(routePath)
     await router.isReady()

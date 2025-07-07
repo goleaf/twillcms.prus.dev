@@ -127,7 +127,76 @@ describe('SearchOverlay', () => {
     
     expect(wrapper.emitted('close')).toBeFalsy()
   })
+import { describe, it, expect } from 'vitest';
+import { mount } from '@vue/test-utils';
+import SearchOverlay from '@/components/SearchOverlay.vue';
 
+describe('SearchOverlay', () => {
+  it('renders when isOpen is true', () => {
+    const wrapper = mount(SearchOverlay, {
+      props: {
+        isOpen: true
+      }
+    });
+
+    expect(wrapper.find('.search-overlay').exists()).toBe(true);
+  });
+
+  it('does not render when isOpen is false', () => {
+    const wrapper = mount(SearchOverlay, {
+      props: {
+        isOpen: false
+      }
+    });
+
+    expect(wrapper.find('.search-overlay').exists()).toBe(false);
+  });
+
+  it('emits close event when close button is clicked', async () => {
+    const wrapper = mount(SearchOverlay, {
+      props: {
+        isOpen: true
+      }
+    });
+
+    const closeButton = wrapper.find('.close-button');
+    await closeButton.trigger('click');
+
+    expect(wrapper.emitted('close')).toBeTruthy();
+  });
+
+  it('emits search event when typing in input', async () => {
+    const wrapper = mount(SearchOverlay, {
+      props: {
+        isOpen: true
+      }
+    });
+
+    const input = wrapper.find('input[type="text"]');
+    await input.setValue('test query');
+    await input.trigger('input');
+
+    expect(wrapper.emitted('search')).toBeTruthy();
+    expect(wrapper.emitted('search')?.[0]).toEqual(['test query']);
+  });
+
+  it('shows search results when query length > 2', async () => {
+    const wrapper = mount(SearchOverlay, {
+      props: {
+        isOpen: true
+      }
+    });
+
+    const input = wrapper.find('input[type="text"]');
+    await input.setValue('test');
+
+    // Wait for reactivity
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.find('.results').exists()).toBe(true);
+    expect(wrapper.find('.result-item').exists()).toBe(true);
+  });
+});
   it('has proper accessibility attributes', () => {
     const wrapper = createWrapper({ isVisible: true })
     

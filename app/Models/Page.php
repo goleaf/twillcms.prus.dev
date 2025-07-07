@@ -1,5 +1,39 @@
 <?php
+<?php
 
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
+
+class Page extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'title',
+        'slug',
+        'content',
+        'template',
+        'status',
+        'meta_data',
+    ];
+
+    protected $casts = [
+        'meta_data' => 'array',
+    ];
+
+    public function scopePublished(Builder $query): Builder
+    {
+        return $query->where('status', 'published');
+    }
+
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
+    }
+}
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;

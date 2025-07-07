@@ -11,36 +11,45 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Performance indexes for posts table
-        DB::statement('CREATE INDEX idx_posts_published_created ON posts(published, created_at DESC)');
-        DB::statement('CREATE INDEX idx_posts_position ON posts(position)');
-        DB::statement('CREATE INDEX idx_posts_published_position ON posts(published, position)');
+        // Check if columns exist before creating indexes
+        if (Schema::hasColumn('posts', 'status')) {
+            DB::statement('CREATE INDEX idx_posts_status_created ON posts(status, created_at DESC)');
+        }
 
-        // Performance indexes for categories table
-        DB::statement('CREATE INDEX idx_categories_published_position ON categories(published, position)');
+        if (Schema::hasColumn('posts', 'published_at')) {
+            DB::statement('CREATE INDEX idx_posts_published_at ON posts(published_at DESC)');
+        }
 
-        // Performance indexes for post_category pivot table
-        DB::statement('CREATE INDEX idx_post_category_post ON post_category(post_id)');
-        DB::statement('CREATE INDEX idx_post_category_category ON post_category(category_id)');
-        DB::statement('CREATE INDEX idx_post_category_composite ON post_category(post_id, category_id)');
-
-        // Date-based indexes for archive functionality (MySQL compatible)
-        // Note: Functional indexes not supported in older MariaDB versions
+        // Basic date indexes
         DB::statement('CREATE INDEX idx_posts_created_at ON posts(created_at DESC)');
         DB::statement('CREATE INDEX idx_posts_updated_at ON posts(updated_at DESC)');
 
-        // Performance indexes for twill-specific columns
-        if (Schema::hasColumn('posts', 'publish_start_date')) {
-            DB::statement('CREATE INDEX idx_posts_publish_dates ON posts(publish_start_date, publish_end_date)');
+        // Performance indexes for categories table (only if they exist)
+        if (Schema::hasTable('categories')) {
+            if (Schema::hasColumn('categories', 'published') && Schema::hasColumn('categories', 'position')) {
+                DB::statement('CREATE INDEX idx_categories_published_position ON categories(published, position)');
+            }
         }
 
-        if (Schema::hasColumn('posts', 'featured')) {
-            DB::statement('CREATE INDEX idx_posts_featured ON posts(featured, published)');
+        // Performance indexes for post_category pivot table (only if it exists)
+        if (Schema::hasTable('post_category')) {
+            DB::statement('CREATE INDEX idx_post_category_post ON post_category(post_id)');
+            DB::statement('CREATE INDEX idx_post_category_category ON post_category(category_id)');
+            DB::statement('CREATE INDEX idx_post_category_composite ON post_category(post_id, category_id)');
         }
 
-        // Search indexes for direct content fields (single language)
-        if (Schema::hasColumn('posts', 'title') && Schema::hasColumn('posts', 'description')) {
-            DB::statement('CREATE INDEX idx_posts_search ON posts(title, description)');
+        // Search indexes for content fields (only if they exist)
+        if (Schema::hasColumn('posts', 'title')) {
+            DB::statement('CREATE INDEX idx_posts_title ON posts(title)');
+        }
+
+        if (Schema::hasColumn('posts', 'slug')) {
+            DB::statement('CREATE INDEX idx_posts_slug ON posts(slug)');
+        }
+
+        // User relationship index
+        if (Schema::hasColumn('posts', 'user_id')) {
+            DB::statement('CREATE INDEX idx_posts_user_id ON posts(user_id)');
         }
     }
 
@@ -49,35 +58,26 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Drop performance indexes using MySQL syntax
+        // Drop performance indexes for SQLite
         $indexes = [
-            'posts' => [
-                'idx_posts_published_created',
-                'idx_posts_position',
-                'idx_posts_published_position',
-                'idx_posts_created_at',
-                'idx_posts_updated_at',
-                'idx_posts_publish_dates',
-                'idx_posts_featured',
-                'idx_posts_search',
-            ],
-            'categories' => [
-                'idx_categories_published_position',
-            ],
-            'post_category' => [
-                'idx_post_category_post',
-                'idx_post_category_category',
-                'idx_post_category_composite',
-            ],
+            'idx_posts_status_created',
+            'idx_posts_published_at',
+            'idx_posts_created_at',
+            'idx_posts_updated_at',
+            'idx_categories_published_position',
+            'idx_post_category_post',
+            'idx_post_category_category',
+            'idx_post_category_composite',
+            'idx_posts_title',
+            'idx_posts_slug',
+            'idx_posts_user_id',
         ];
 
-        foreach ($indexes as $table => $tableIndexes) {
-            foreach ($tableIndexes as $index) {
-                try {
-                    DB::statement("DROP INDEX {$index} ON {$table}");
-                } catch (\Exception $e) {
-                    // Index may not exist, continue
-                }
+        foreach ($indexes as $index) {
+            try {
+                DB::statement("DROP INDEX IF EXISTS {$index}");
+            } catch (\Exception $e) {
+                // Index may not exist, continue
             }
         }
     }

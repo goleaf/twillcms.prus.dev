@@ -58,6 +58,8 @@ class PostController extends Controller
             'priority' => 'nullable|integer|min:0|max:100',
             'categories' => 'array',
             'categories.*' => 'exists:categories,id',
+            'tags' => 'array',
+            'tags.*' => 'exists:tags,id',
         ]);
 
         $post = new Post;
@@ -92,6 +94,11 @@ class PostController extends Controller
             $post->categories()->attach($validated['categories']);
         }
 
+        // Attach tags
+        if (! empty($validated['tags'])) {
+            $post->tags()->attach($validated['tags']);
+        }
+
         return redirect()->route('admin.posts.index')->with('success', 'Post created successfully!');
     }
 
@@ -122,6 +129,8 @@ class PostController extends Controller
             'priority' => 'nullable|integer|min:0|max:100',
             'categories' => 'array',
             'categories.*' => 'exists:categories,id',
+            'tags' => 'array',
+            'tags.*' => 'exists:tags,id',
         ]);
 
         $titleValue = is_array($validated['title']) ? ($validated['title']['en'] ?? reset($validated['title'])) : $validated['title'];
@@ -151,6 +160,9 @@ class PostController extends Controller
 
         // Sync categories
         $post->categories()->sync($validated['categories'] ?? []);
+
+        // Sync tags
+        $post->tags()->sync($validated['tags'] ?? []);
 
         return redirect()->route('admin.posts.index')->with('success', 'Post updated successfully!');
     }

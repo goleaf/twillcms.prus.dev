@@ -20,19 +20,19 @@ class CategoryFactory extends Factory
      */
     public function definition(): array
     {
-        $title = $this->faker->words(2, true);
+        $title = fake()->words(2, true);
 
         return [
-            'published' => $this->faker->boolean(80),
             'title' => ucwords($title),
-            'description' => $this->faker->paragraph(1),
-            'position' => $this->faker->numberBetween(1, 100),
+            'name' => ucwords($title),
             'slug' => Str::slug($title),
-            'color_code' => $this->faker->hexColor(),
-            'view_count' => $this->faker->numberBetween(0, 500),
-            'sort_order' => $this->faker->numberBetween(1, 10),
-            'created_at' => $this->faker->dateTimeBetween('-1 year', 'now'),
-            'updated_at' => now(),
+            'description' => fake()->paragraph(),
+            'image' => null,
+            'is_active' => true,
+            'published' => fake()->boolean(80),
+            'view_count' => fake()->numberBetween(0, 500),
+            'position' => fake()->numberBetween(1, 100),
+            'sort_order' => fake()->numberBetween(1, 10),
         ];
     }
 
@@ -50,16 +50,10 @@ class CategoryFactory extends Factory
         ]);
     }
 
-    /**
-     * Create category with title
-     */
-    public function withTitle(string $title): static
+    public function inactive(): static
     {
-        return $this->afterCreating(function (Category $category) use ($title) {
-            $category->update([
-                'title' => $title,
-                'description' => "Description for {$title}",
-            ]);
-        });
+        return $this->state(fn (array $attributes) => [
+            'is_active' => false,
+        ]);
     }
 }

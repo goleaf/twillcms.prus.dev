@@ -7,6 +7,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use App\Models\Post;
+use App\Observers\PostObserver;
+use App\Models\Category;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -33,11 +36,13 @@ class AppServiceProvider extends ServiceProvider
 
         // API route model binding
         Route::bind('post', function ($value) {
-            return \App\Models\Post::where('id', $value)->orWhere('slug', $value)->firstOrFail();
+            return Post::where('id', $value)->orWhere('slug', $value)->firstOrFail();
         });
 
         Route::bind('category', function ($value) {
-            return \App\Models\Category::where('id', $value)->orWhere('slug', $value)->firstOrFail();
+            return Category::where('id', $value)->orWhere('slug', $value)->firstOrFail();
         });
+
+        Post::observe(PostObserver::class);
     }
 }

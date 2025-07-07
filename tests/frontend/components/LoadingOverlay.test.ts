@@ -1,7 +1,67 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import LoadingOverlay from '@/components/ui/LoadingOverlay.vue'
+import { describe, it, expect } from 'vitest';
+import { mount } from '@vue/test-utils';
+import LoadingOverlay from '@/components/LoadingOverlay.vue';
 
+describe('LoadingOverlay', () => {
+  it('renders when isLoading is true', () => {
+    const wrapper = mount(LoadingOverlay, {
+      props: {
+        isLoading: true
+      }
+    });
+
+    expect(wrapper.find('.loading-overlay').exists()).toBe(true);
+    expect(wrapper.find('.spinner').exists()).toBe(true);
+  });
+
+  it('does not render when isLoading is false', () => {
+    const wrapper = mount(LoadingOverlay, {
+      props: {
+        isLoading: false
+      }
+    });
+
+    expect(wrapper.find('.loading-overlay').exists()).toBe(false);
+  });
+
+  it('displays custom message when provided', () => {
+    const customMessage = 'Please wait...';
+    const wrapper = mount(LoadingOverlay, {
+      props: {
+        isLoading: true,
+        message: customMessage
+      }
+    });
+
+    expect(wrapper.text()).toContain(customMessage);
+  });
+
+  it('displays default message when no message prop is provided', () => {
+    const wrapper = mount(LoadingOverlay, {
+      props: {
+        isLoading: true
+      }
+    });
+
+    expect(wrapper.text()).toContain('Loading...');
+  });
+
+  it('has correct CSS classes for styling', () => {
+    const wrapper = mount(LoadingOverlay, {
+      props: {
+        isLoading: true
+      }
+    });
+
+    const overlay = wrapper.find('.loading-overlay');
+    expect(overlay.classes()).toContain('fixed');
+    expect(overlay.classes()).toContain('inset-0');
+    expect(overlay.classes()).toContain('z-50');
+  });
+});
 describe('LoadingOverlay', () => {
   const createWrapper = (props = {}) => {
     return mount(LoadingOverlay, {

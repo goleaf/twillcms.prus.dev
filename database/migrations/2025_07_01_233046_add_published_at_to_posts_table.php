@@ -12,7 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('posts', function (Blueprint $table) {
-            $table->timestamp('published_at')->nullable()->after('published');
+            if (!Schema::hasColumn('posts', 'published_at')) {
+                $table->timestamp('published_at')->nullable()->after('status');
+            }
         });
     }
 
@@ -22,7 +24,9 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('posts', function (Blueprint $table) {
-            $table->dropColumn('published_at');
+            if (Schema::hasColumn('posts', 'published_at')) {
+                $table->dropColumn('published_at');
+            }
         });
     }
 };

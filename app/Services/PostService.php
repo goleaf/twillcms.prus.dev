@@ -1,5 +1,92 @@
 <?php
+<?php
 
+namespace App\Services;
+
+use App\Models\Post;
+use App\Repositories\PostRepository;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
+use Intervention\Image\Laravel\Facades\Image;
+
+class PostService
+{
+    public function __construct(
+        private PostRepository $postRepository,
+        private ImageService $imageService
+    ) {}
+
+    public function createPost(array $data): Post
+    {
+        if (isset($data['featured_image']) && $data['featured_image'] instanceof UploadedFile) {
+            $data['featured_image'] = $this->imageService->uploadAndResize(
+                $data['featured_image'],
+                'posts',
+                800,
+                600
+            );
+        }
+
+        return $this->postRepository->create($data);
+    }
+
+    public function updatePost(int $id, array $data): bool
+    {
+        $post = $this->postRepository->find($id);
+
+        if (!$post) {
+            return false;
+        }
+
+        if (isset($data['featured_image']) && $data['featured_image'] instanceof UploadedFile) {
+            // Delete old image
+            if ($post->featured_image) {
+                Storage::disk('public')->delete($post->featured_image);
+            }
+
+            $data['featured_image'] = $this->imageService->uploadAndResize(
+                $data['featured_image'],
+                'posts',
+                800,
+                600
+            );
+        }
+
+        return $this->postRepository->update($id, $data);
+    }
+
+    public function deletePost(int $id): bool
+    {
+        $post = $this->postRepository->find($id);
+
+        if (!$post) {
+            return false;
+        }
+
+        // Delete associated image
+        if ($post->featured_image) {
+            Storage::disk('public')->delete($post->featured_image);
+        }
+
+        return $this->postRepository->delete($id);
+    }
+
+    public function publishPost(int $id): bool
+    {
+        return $this->postRepository->update($id, [
+            'status' => 'published',
+            'published_at' => now()
+        ]);
+    }
+
+    public function unpublishPost(int $id): bool
+    {
+        return $this->postRepository->update($id, [
+            'status' => 'draft',
+            'published_at' => null
+        ]);
+    }
+}
 namespace App\Services;
 
 use App\Models\Post;

@@ -129,7 +129,174 @@ describe('API Integration Tests', () => {
         ok: true,
         json: async () => mockCategories
       })
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 
+// Mock API functions
+const mockFetch = vi.fn();
+global.fetch = mockFetch;
+
+interface Post {
+  id: number;
+  title: string;
+  slug: string;
+  content: string;
+}
+
+interface ApiResponse<T> {
+  data: T;
+  meta?: {
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+  };
+}
+
+class ApiClient {
+  private baseUrl: string;
+
+  constructor(baseUrl: string = '/api/v1') {
+    this.baseUrl = baseUrl;
+  }
+
+  async get<T>(endpoint: string): Promise<ApiResponse<T>> {
+    const response = await fetch(`${this.baseUrl}${endpoint}`);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    return response.json();
+  }
+
+  async post<T>(endpoint: string, data: any): Promise<ApiResponse<T>> {
+    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    return response.json();
+  }
+}
+
+describe('API Integration', () => {
+  let apiClient: ApiClient;
+
+  beforeEach(() => {
+    apiClient = new ApiClient();
+    mockFetch.mockClear();
+  });
+
+  describe('Posts API', () => {
+    it('fetches posts successfully', async () => {
+      const mockPosts = [
+        { id: 1, title: 'Test Post 1', slug: 'test-post-1', content: 'Content 1' },
+        { id: 2, title: 'Test Post 2', slug: 'test-post-2', content: 'Content 2' }
+      ];
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: mockPosts,
+          meta: {
+            current_page: 1,
+            last_page: 1,
+            per_page: 15,
+            total: 2
+          }
+        })
+      });
+
+      const response = await apiClient.get<Post[]>('/posts');
+
+      expect(mockFetch).toHaveBeenCalledWith('/api/v1/posts');
+      expect(response.data).toEqual(mockPosts);
+      expect(response.meta?.total).toBe(2);
+    });
+
+    it('fetches single post by slug', async () => {
+      const mockPost = {
+        id: 1,
+        title: 'Test Post',
+        slug: 'test-post',
+        content: 'Test content'
+      };
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockPost
+      });
+
+      const response = await apiClient.get<Post>('/posts/test-post');
+
+      expect(mockFetch).toHaveBeenCalledWith('/api/v1/posts/test-post');
+      expect(response).toEqual(mockPost);
+    });
+
+    it('handles API errors gracefully', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        statusText: 'Not Found'
+      });
+
+      await expect(apiClient.get('/posts/nonexistent')).rejects.toThrow('HTTP 404: Not Found');
+    });
+
+    it('handles network errors', async () => {
+      mockFetch.mockRejectedValueOnce(new Error('Network error'));
+
+      await expect(apiClient.get('/posts')).rejects.toThrow('Network error');
+    });
+  });
+
+  describe('Categories API', () => {
+    it('fetches categories successfully', async () => {
+      const mockCategories = [
+        { id: 1, title: 'Technology', slug: 'technology', posts_count: 5 },
+        { id: 2, title: 'Science', slug: 'science', posts_count: 3 }
+      ];
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: mockCategories
+        })
+      });
+
+      const response = await apiClient.get('/categories');
+
+      expect(mockFetch).toHaveBeenCalledWith('/api/v1/categories');
+      expect(response.data).toEqual(mockCategories);
+    });
+  });
+
+  describe('Error Handling', () => {
+    it('handles 500 server errors', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        statusText: 'Internal Server Error'
+      });
+
+      await expect(apiClient.get('/posts')).rejects.toThrow('HTTP 500: Internal Server Error');
+    });
+
+    it('handles malformed JSON responses', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => {
+          throw new Error('Invalid JSON');
+        }
+      });
+
+      await expect(apiClient.get('/posts')).rejects.toThrow('Invalid JSON');
+    });
+  });
+});
       const categoryStore = useCategoryStore()
       await categoryStore.fetchCategories()
 

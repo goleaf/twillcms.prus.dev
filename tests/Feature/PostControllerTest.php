@@ -12,8 +12,7 @@ class PostControllerTest extends TestCase
 
     public function test_can_list_posts()
     {
-        $post = Post::factory()->create([
-            'published' => true,
+        $post = Post::factory()->published()->create([
             'title' => 'Test Post',
         ]);
 
@@ -33,8 +32,7 @@ class PostControllerTest extends TestCase
 
     public function test_can_show_individual_post()
     {
-        $post = Post::factory()->create([
-            'published' => true,
+        $post = Post::factory()->published()->create([
             'title' => 'Test Post',
             'slug' => 'test-post',
         ]);

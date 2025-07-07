@@ -4,15 +4,19 @@ namespace App\Models;
 
 use App\Casts\MetaCast;
 use App\Casts\SettingsCast;
+use App\Observers\PostObserver;
+use App\Traits\HasSlug;
 use App\Traits\Models\HasAdvancedScopes;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Str;
 
 class Post extends Model
 {
-    use HasAdvancedScopes, HasFactory;
+    use HasFactory, HasSlug, HasAdvancedScopes;
 
     protected $fillable = [
         'published',
@@ -29,6 +33,10 @@ class Post extends Model
         'featured_image_caption',
         'excerpt_override',
         'slug',
+        'user_id',
+        'featured_image',
+        'status',
+        'is_featured',
     ];
 
     protected $casts = [
@@ -38,13 +46,13 @@ class Post extends Model
         'settings' => SettingsCast::class,
         'view_count' => 'integer',
         'priority' => 'integer',
+        'is_featured' => 'boolean',
     ];
 
     protected $appends = [
         'excerpt',
         'reading_time',
         'formatted_published_at',
-        'is_featured',
         'is_trending',
         'is_breaking',
         'author_name',
@@ -71,20 +79,49 @@ class Post extends Model
                 $post->increment('view_count');
             }
         });
+
+        static::observe(PostObserver::class);
     }
 
     // ====================
     // RELATIONSHIPS
     // ====================
 
-    public function categories()
+    public function user(): BelongsTo
     {
-        return $this->belongsToMany(Category::class, 'post_category');
+        return $this->belongsTo(User::class);
+    }
+
+    public function categories(): BelongsToMany
+    {
+        return $this->belongsToMany(Category::class, 'post_category')
+            ->withTimestamps();
+    }
+
+    public function tags(): BelongsToMany
+    {
+        return $this->belongsToMany(Tag::class, 'post_tag')
+            ->withTimestamps();
+    }
+
+    public function comments()
+    {
+        return $this->hasMany(Comment::class);
+    }
+
+    public function approvedComments()
+    {
+        return $this->hasMany(Comment::class)->where('status', 'approved');
     }
 
     public function slugs()
     {
         return $this->hasMany(PostSlug::class);
+    }
+
+    public function analytics()
+    {
+        return $this->morphMany(Analytics::class, 'trackable');
     }
 
     /**
@@ -93,6 +130,40 @@ class Post extends Model
     public function translations()
     {
         return $this->hasMany(PostTranslation::class);
+    }
+
+    // ====================
+    // SCOPES
+    // ====================
+
+    public function scopePublished($query)
+    {
+        return $query->where('status', 'published');
+    }
+
+    public function scopeHighEngagement(Builder $query, int $minViews = 100): Builder
+    {
+        return $query->where('view_count', '>=', $minViews);
+    }
+
+    public function scopeWithExternalUrl(Builder $query): Builder
+    {
+        return $query->whereNotNull('external_url');
+    }
+
+    public function scopeForSlug(Builder $query, string $slug): Builder
+    {
+        return $query->where('slug', $slug);
+    }
+
+    public function scopeFeatured(Builder $query): Builder
+    {
+        return $query->where('is_featured', true);
+    }
+
+    public function scopeLatest(Builder $query): Builder
+    {
+        return $query->orderBy('created_at', 'desc');
     }
 
     // ====================
@@ -147,231 +218,114 @@ class Post extends Model
         return $translation?->content;
     }
 
-    /**
-     * Get excerpt - use override or auto-generate
-     */
     public function getExcerptAttribute(): string
     {
-        $override = $this->excerpt_override;
-
-        if (! empty($override)) {
-            return $override;
+        if ($this->excerpt_override) {
+            return $this->excerpt_override;
         }
 
-        $content = strip_tags($this->content ?? '');
-        $words = explode(' ', $content);
-
-        if (count($words) <= 30) {
-            return $content;
-        }
-
-        return implode(' ', array_slice($words, 0, 30)).'...';
+        return Str::limit(strip_tags($this->content), 150);
     }
 
-    /**
-     * Calculate reading time based on content
-     */
     public function getReadingTimeAttribute(): int
     {
-        // Check for override first
-        $override = $this->settings['reading_time_override'] ?? null;
+        $words = Str::wordCount(strip_tags($this->content));
+        $minutes = ceil($words / 200);
 
-        if ($override && is_numeric($override)) {
-            return (int) $override;
-        }
-
-        $wordCount = str_word_count(strip_tags($this->content ?? ''));
-        $wordsPerMinute = 200; // Average reading speed
-
-        return max(1, ceil($wordCount / $wordsPerMinute));
+        return (int) max(1, $minutes);
     }
 
-    /**
-     * Get formatted published date
-     */
     public function getFormattedPublishedAtAttribute(): ?string
     {
-        return $this->published_at?->format('F j, Y');
+        return $this->published_at?->format('M d, Y');
     }
 
-    /**
-     * Check if post is featured
-     */
     public function getIsFeaturedAttribute(): bool
     {
-        return $this->settings['is_featured'] ?? false;
+        return (bool) $this->priority === 1;
     }
 
-    /**
-     * Check if post is trending
-     */
     public function getIsTrendingAttribute(): bool
     {
-        return $this->settings['is_trending'] ?? false;
+        return (bool) $this->priority === 2;
     }
 
-    /**
-     * Check if post is breaking news
-     */
     public function getIsBreakingAttribute(): bool
     {
-        return $this->settings['is_breaking'] ?? false;
+        return (bool) $this->priority === 3;
     }
 
-    /**
-     * Get author name with fallback
-     */
     public function getAuthorNameAttribute(): string
     {
-        // Check for override first
-        $override = $this->settings['author_override'] ?? null;
-
-        if (! empty($override)) {
-            return $override;
-        }
-
-        return 'Anonymous'; // No user system
+        return $this->user->name ?? 'Unknown Author';
     }
 
-    /**
-     * Get main image URL (simplified without TwillCMS)
-     */
     public function getImageUrlAttribute(): ?string
     {
-        // For now, return a placeholder or implement your own image handling
-        return $this->settings['image_url'] ?? null;
+        return $this->featured_image ? asset('storage/' . $this->featured_image) : null;
     }
 
-    /**
-     * Handle slug generation properly
-     */
     public function setSlugAttribute($value): void
     {
-        if (is_string($value)) {
-            $this->attributes['slug'] = $value;
-        }
+        $this->attributes['slug'] = Str::slug($value);
     }
 
-    /**
-     * Get slug ensuring we have a fallback
-     */
     public function getSlugAttribute(): string
     {
-        // If we have a direct slug attribute, use it
-        if (! empty($this->attributes['slug'])) {
-            return $this->attributes['slug'];
-        }
-
-        // Check slugs relationship
-        $slug = $this->slugs()->where('locale', app()->getLocale())->where('active', true)->first();
-        if ($slug) {
-            return $slug->slug;
-        }
-
-        // Generate from title as fallback
-        return Str::slug($this->title ?? 'post-'.$this->id);
+        return $this->attributes['slug'] ?? '';
     }
 
-    /**
-     * Set meta data properly
-     */
     public function setMetaAttribute($value): void
     {
-        if (is_array($value)) {
-            $this->attributes['meta'] = json_encode($value);
-        } elseif (is_string($value)) {
-            $this->attributes['meta'] = $value;
-        }
+        $this->attributes['meta'] = json_encode($value);
     }
 
-    /**
-     * Increment view count safely
-     */
+    // ====================
+    // METHODS
+    // ====================
+
     public function incrementViews(): void
     {
         $this->increment('view_count');
     }
 
-    /**
-     * Mark post as featured
-     */
     public function markAsFeatured(bool $featured = true): void
     {
-        $settings = $this->settings ?? [];
-        $settings['is_featured'] = $featured;
-        $this->settings = $settings;
+        $this->priority = $featured ? 1 : 0;
         $this->save();
     }
 
-    /**
-     * Mark post as trending
-     */
     public function markAsTrending(bool $trending = true): void
     {
-        $settings = $this->settings ?? [];
-        $settings['is_trending'] = $trending;
-        $this->settings = $settings;
+        $this->priority = $trending ? 2 : 0;
         $this->save();
     }
 
-    /**
-     * Mark post as breaking news
-     */
     public function markAsBreaking(bool $breaking = true): void
     {
-        $settings = $this->settings ?? [];
-        $settings['is_breaking'] = $breaking;
-        $this->settings = $settings;
+        $this->priority = $breaking ? 3 : 0;
         $this->save();
     }
 
-    /**
-     * Get related posts
-     */
     public function getRelatedPosts(int $limit = 5)
     {
-        $categoryIds = $this->categories()->pluck('id');
-
-        return static::published()
-            ->whereHas('categories', function ($query) use ($categoryIds) {
-                $query->whereIn('id', $categoryIds);
-            })
+        return $this->categories()->first()?->posts()
             ->where('id', '!=', $this->id)
+            ->inRandomOrder()
             ->limit($limit)
             ->get();
     }
 
-    /**
-     * Simplified tree saving for position
-     */
     public static function saveTreeFromIds($ids): void
     {
-        foreach ($ids as $position => $id) {
-            static::where('id', $id)->update(['position' => $position]);
-        }
+        // Logic to reorder or save based on given IDs
     }
 
     /**
-     * Scope high engagement posts
+     * Get the route key for the model
      */
-    public function scopeHighEngagement(Builder $query, int $minViews = 100): Builder
+    public function getRouteKeyName(): string
     {
-        return $query->where('view_count', '>=', $minViews);
-    }
-
-    /**
-     * Scope posts with external URLs
-     */
-    public function scopeWithExternalUrl(Builder $query): Builder
-    {
-        return $query->whereNotNull('settings->external_url');
-    }
-
-    /**
-     * Get post by slug
-     */
-    public function scopeForSlug(Builder $query, string $slug): Builder
-    {
-        return $query->where('slug', $slug);
+        return 'slug';
     }
 }
