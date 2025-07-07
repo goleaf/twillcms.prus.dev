@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeImageLazyLoading();
     initializeInfiniteScroll();
     initializeThemeToggle();
-});
+        });
 
 // Enhanced search functionality with autocomplete
 function initializeSearch() {
@@ -42,13 +42,13 @@ function initializeSearch() {
             }
         }, 300));
     });
-}
+    }
 
 // Enhanced mobile menu with smooth animations
 function initializeMobileMenu() {
     const mobileMenuButton = document.querySelector('#mobile-menu-button');
     const mobileMenu = document.querySelector('#mobile-menu');
-    
+
     if (mobileMenuButton && mobileMenu) {
         mobileMenuButton.addEventListener('click', function() {
             const isHidden = mobileMenu.classList.contains('hidden');
@@ -67,7 +67,7 @@ function initializeMobileMenu() {
             }
         });
     }
-}
+    }
 
 // Enhanced scroll to top with progress indicator
 function initializeScrollToTop() {
@@ -107,7 +107,7 @@ function initializeScrollToTop() {
 function initializeTagSearch() {
     const tagSearchInput = document.querySelector('[data-tag-search]');
     const tagElements = document.querySelectorAll('[data-tag]');
-    
+            
     if (tagSearchInput && tagElements.length > 0) {
         tagSearchInput.addEventListener('input', function() {
             const query = this.value.toLowerCase();
@@ -126,7 +126,7 @@ function initializeTagSearch() {
             });
         });
     }
-}
+    }
 
 // Reading progress indicator for articles
 function initializeReadingProgress() {
@@ -147,7 +147,7 @@ function initializeReadingProgress() {
             progressBar.style.width = progress + '%';
         }, 10));
     }
-}
+    }
 
 // Social sharing functionality
 function initializeSocialSharing() {
@@ -191,7 +191,7 @@ function initializeSocialSharing() {
 // Lazy loading for images
 function initializeImageLazyLoading() {
     const images = document.querySelectorAll('img[data-src]');
-    
+
     if ('IntersectionObserver' in window) {
         const imageObserver = new IntersectionObserver((entries) => {
             entries.forEach(entry => {

@@ -5,6 +5,7 @@ use App\Http\Controllers\NewsController;
 use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\TagController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\HomeController;
 
 /*
 |--------------------------------------------------------------------------
@@ -18,9 +19,9 @@ use App\Http\Controllers\CategoryController;
 */
 
 // News Portal Frontend Routes
-Route::get('/', [NewsController::class, 'index'])->name('home');
-Route::get('/news', [NewsController::class, 'index'])->name('news.index');
-Route::get('/news/{slug}', [ArticleController::class, 'show'])->name('news.show');
+Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/article/{article}', [HomeController::class, 'show'])->name('article.show');
+Route::get('/tag/{tag}', [HomeController::class, 'tag'])->name('tag.show');
 
 // Tags (unlimited categories)
 Route::get('/tags', [TagController::class, 'index'])->name('tags.index');
@@ -38,7 +39,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/', function () {
         return view('admin.dashboard');
     })->name('dashboard');
-    
+
     Route::resource('posts', App\Http\Controllers\Admin\PostController::class);
     Route::resource('categories', App\Http\Controllers\Admin\CategoryController::class);
     Route::resource('tags', App\Http\Controllers\Admin\TagController::class);

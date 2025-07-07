@@ -7,6 +7,8 @@ use App\Models\Post;
 use App\Models\Tag;
 use App\Models\Category;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Models\Article;
+use PHPUnit\Framework\Attributes\Test;
 
 class NewsPortalTest extends TestCase
 {
@@ -333,5 +335,157 @@ class NewsPortalTest extends TestCase
         $response = $this->get('/categories/nonexistent-category');
 
         $response->assertStatus(404);
+    }
+
+    #[Test]
+    public function test_home_page_displays_correctly()
+    {
+        $tag = Tag::factory()->create();
+        $articles = Article::factory()
+            ->count(3)
+            ->create()
+            ->each(function ($article) use ($tag) {
+                $article->tags()->attach($tag);
+            });
+
+        $response = $this->get(route('home'));
+
+        $response->assertStatus(200)
+                ->assertViewIs('news.index')
+                ->assertViewHas('articles')
+                ->assertViewHas('featuredArticles')
+                ->assertViewHas('tags')
+                ->assertSee($articles->first()->title)
+                ->assertSee($tag->name);
+    }
+
+    #[Test]
+    public function test_article_detail_page_displays_correctly()
+    {
+        $article = Article::factory()->create(['is_published' => true]);
+        $tags = Tag::factory()->count(2)->create();
+        $article->tags()->attach($tags);
+
+        $response = $this->get(route('article.show', $article));
+
+        $response->assertStatus(200)
+                ->assertViewIs('news.show')
+                ->assertViewHas('article')
+                ->assertViewHas('relatedArticles')
+                ->assertSee($article->title)
+                ->assertSee($tags->first()->name);
+    }
+
+    #[Test]
+    public function test_unpublished_article_returns_404()
+    {
+        $article = Article::factory()->create(['is_published' => false]);
+
+        $response = $this->get(route('article.show', $article));
+
+        $response->assertStatus(404);
+    }
+
+    #[Test]
+    public function test_tag_page_displays_correctly()
+    {
+        $tag = Tag::factory()->create();
+        $articles = Article::factory()
+            ->count(3)
+            ->create(['is_published' => true])
+            ->each(function ($article) use ($tag) {
+                $article->tags()->attach($tag);
+            });
+
+        $response = $this->get(route('tag.show', $tag));
+
+        $response->assertStatus(200)
+                ->assertViewIs('news.tag')
+                ->assertViewHas('tag')
+                ->assertViewHas('articles')
+                ->assertSee($tag->name)
+                ->assertSee($articles->first()->title);
+    }
+
+    #[Test]
+    public function test_search_functionality_works()
+    {
+        $searchTerm = 'unique search term';
+        $matchingArticle = Article::factory()->create([
+            'title' => "Article with {$searchTerm}",
+            'is_published' => true
+        ]);
+        $nonMatchingArticle = Article::factory()->create([
+            'title' => 'Different article',
+            'is_published' => true
+        ]);
+
+        $response = $this->get(route('home', ['search' => $searchTerm]));
+
+        $response->assertStatus(200)
+                ->assertViewIs('news.index')
+                ->assertSee($matchingArticle->title)
+                ->assertDontSee($nonMatchingArticle->title);
+    }
+
+    #[Test]
+    public function test_tag_filtering_works()
+    {
+        $tag = Tag::factory()->create();
+        $matchingArticle = Article::factory()->create(['is_published' => true]);
+        $nonMatchingArticle = Article::factory()->create(['is_published' => true]);
+        
+        $matchingArticle->tags()->attach($tag);
+
+        $response = $this->get(route('home', ['tag' => $tag->slug]));
+
+        $response->assertStatus(200)
+                ->assertViewIs('news.index')
+                ->assertSee($matchingArticle->title)
+                ->assertDontSee($nonMatchingArticle->title);
+    }
+
+    #[Test]
+    public function test_pagination_works()
+    {
+        $articles = Article::factory()
+            ->count(15) // More than our per-page limit
+            ->create(['is_published' => true]);
+
+        $response = $this->get(route('home'));
+
+        $response->assertStatus(200)
+                ->assertViewIs('news.index')
+                ->assertSee('Next');
+    }
+
+    #[Test]
+    public function test_view_count_increments()
+    {
+        $article = Article::factory()->create(['is_published' => true]);
+        $initialViewCount = $article->view_count;
+
+        $response = $this->get(route('article.show', $article));
+
+        $this->assertEquals($initialViewCount + 1, $article->fresh()->view_count);
+    }
+
+    #[Test]
+    public function test_related_articles_are_shown()
+    {
+        $tag = Tag::factory()->create();
+        $article = Article::factory()->create(['is_published' => true]);
+        $relatedArticle = Article::factory()->create(['is_published' => true]);
+        $unrelatedArticle = Article::factory()->create(['is_published' => true]);
+
+        $article->tags()->attach($tag);
+        $relatedArticle->tags()->attach($tag);
+
+        $response = $this->get(route('article.show', $article));
+
+        $response->assertStatus(200)
+                ->assertViewIs('news.show')
+                ->assertSee($relatedArticle->title)
+                ->assertDontSee($unrelatedArticle->title);
     }
 } 

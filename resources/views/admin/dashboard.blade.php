@@ -8,7 +8,7 @@
     <div class="bg-white shadow">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
-                <div class="flex items-center">
+            <div class="flex items-center">
                     <h1 class="text-xl font-semibold text-gray-900">Admin Dashboard</h1>
                 </div>
                 <div class="flex items-center space-x-4">
@@ -28,70 +28,70 @@
             <!-- Stats Grid -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <!-- Total Posts -->
-                <div class="bg-white overflow-hidden shadow rounded-lg">
-                    <div class="p-5">
-                        <div class="flex items-center">
-                            <div class="flex-shrink-0">
+    <div class="bg-white overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
                                 <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
                                     <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9.5a2 2 0 00-2-2h-2v4a2 2 0 01-2 2H9.5a2 2 0 00-2 2v.5a2 2 0 002 2H19z"/>
-                                    </svg>
+                    </svg>
                                 </div>
-                            </div>
-                            <div class="ml-5 w-0 flex-1">
-                                <dl>
+                </div>
+                <div class="ml-5 w-0 flex-1">
+                    <dl>
                                     <dt class="text-sm font-medium text-gray-500 truncate">Total Posts</dt>
                                     <dd class="text-lg font-medium text-gray-900">{{ App\Models\Post::count() }}</dd>
-                                </dl>
-                            </div>
-                        </div>
-                    </div>
+                    </dl>
                 </div>
+            </div>
+        </div>
+    </div>
 
                 <!-- Total Categories -->
-                <div class="bg-white overflow-hidden shadow rounded-lg">
-                    <div class="p-5">
-                        <div class="flex items-center">
-                            <div class="flex-shrink-0">
+    <div class="bg-white overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
                                 <div class="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
                                     <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
-                                    </svg>
+                    </svg>
                                 </div>
-                            </div>
-                            <div class="ml-5 w-0 flex-1">
-                                <dl>
+                </div>
+                <div class="ml-5 w-0 flex-1">
+                    <dl>
                                     <dt class="text-sm font-medium text-gray-500 truncate">Total Categories</dt>
                                     <dd class="text-lg font-medium text-gray-900">{{ App\Models\Category::count() }}</dd>
-                                </dl>
-                            </div>
-                        </div>
-                    </div>
+                    </dl>
                 </div>
+            </div>
+        </div>
+    </div>
 
                 <!-- Total Tags -->
-                <div class="bg-white overflow-hidden shadow rounded-lg">
-                    <div class="p-5">
-                        <div class="flex items-center">
-                            <div class="flex-shrink-0">
+    <div class="bg-white overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
                                 <div class="w-8 h-8 bg-yellow-500 rounded-lg flex items-center justify-center">
                                     <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
-                                    </svg>
+                    </svg>
                                 </div>
-                            </div>
-                            <div class="ml-5 w-0 flex-1">
-                                <dl>
+                </div>
+                <div class="ml-5 w-0 flex-1">
+                    <dl>
                                     <dt class="text-sm font-medium text-gray-500 truncate">Total Tags</dt>
                                     <dd class="text-lg font-medium text-gray-900">{{ App\Models\Tag::count() }}</dd>
-                                </dl>
-                            </div>
-                        </div>
-                    </div>
+                    </dl>
                 </div>
             </div>
+        </div>
+    </div>
+</div>
 
-            <!-- Quick Actions -->
+<!-- Quick Actions -->
             <div class="bg-white shadow rounded-lg">
                 <div class="px-6 py-4 border-b border-gray-200">
                     <h3 class="text-lg font-medium text-gray-900">Quick Actions</h3>
@@ -104,8 +104,8 @@
                                 <div class="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center mb-3">
                                     <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9.5a2 2 0 00-2-2h-2v4a2 2 0 01-2 2H9.5a2 2 0 00-2 2v.5a2 2 0 002 2H19z"/>
-                                    </svg>
-                                </div>
+                </svg>
+                </div>
                                 <h4 class="text-lg font-medium text-gray-900">Manage Posts</h4>
                                 <p class="text-sm text-gray-500 mt-1">Create, edit, and manage news articles</p>
                             </a>
@@ -117,8 +117,8 @@
                                 <div class="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center mb-3">
                                     <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
-                                    </svg>
-                                </div>
+                </svg>
+                </div>
                                 <h4 class="text-lg font-medium text-gray-900">Manage Categories</h4>
                                 <p class="text-sm text-gray-500 mt-1">Organize content into categories</p>
                             </a>
@@ -130,21 +130,21 @@
                                 <div class="w-12 h-12 bg-yellow-500 rounded-lg flex items-center justify-center mb-3">
                                     <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
-                                    </svg>
+                                </svg>
                                 </div>
                                 <h4 class="text-lg font-medium text-gray-900">Manage Tags</h4>
                                 <p class="text-sm text-gray-500 mt-1">Create unlimited tags for content</p>
                             </a>
                         </div>
-                    </div>
-                </div>
             </div>
+        </div>
+    </div>
 
             <!-- Recent Posts -->
             <div class="mt-8 bg-white shadow rounded-lg">
                 <div class="px-6 py-4 border-b border-gray-200">
                     <h3 class="text-lg font-medium text-gray-900">Recent Posts</h3>
-                </div>
+                        </div>
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
@@ -179,11 +179,11 @@
                                     <a href="{{ route('news.show', $post->slug) }}" class="text-green-600 hover:text-green-900" target="_blank">View</a>
                                 </td>
                             </tr>
-                            @empty
+                @empty
                             <tr>
                                 <td colspan="5" class="px-6 py-4 text-center text-gray-500">No posts found</td>
                             </tr>
-                            @endforelse
+                @endforelse
                         </tbody>
                     </table>
                 </div>

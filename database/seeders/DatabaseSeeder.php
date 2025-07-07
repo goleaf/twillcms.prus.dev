@@ -5,8 +5,11 @@ namespace Database\Seeders;
 use App\Models\User;
 use App\Models\Category;
 use App\Models\Post;
+use App\Models\Article;
+use App\Models\Tag;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
 
 class DatabaseSeeder extends Seeder
 {
@@ -237,5 +240,51 @@ class DatabaseSeeder extends Seeder
         $this->command->info("🔑 Login credentials:");
         $this->command->info("   - Admin: admin@example.com / password");
         $this->command->info("   - Test: test@example.com / password");
+
+        // Create storage directory for article images
+        Storage::deleteDirectory('public/articles');
+        Storage::makeDirectory('public/articles');
+
+        // Create tags
+        Tag::factory()->count(30)->create();
+
+        // Create 300 articles
+        Article::factory()
+            ->count(300)
+            ->create()
+            ->each(function ($article) {
+                // Attach 2-5 random tags to each article
+                $article->tags()->attach(
+                    Tag::inRandomOrder()
+                        ->take(rand(2, 5))
+                        ->pluck('id')
+                );
+            });
+
+        // Create 10 featured articles
+        Article::factory()
+            ->count(10)
+            ->featured()
+            ->create()
+            ->each(function ($article) {
+                $article->tags()->attach(
+                    Tag::inRandomOrder()
+                        ->take(rand(2, 5))
+                        ->pluck('id')
+                );
+            });
+
+        // Create some unpublished articles
+        Article::factory()
+            ->count(20)
+            ->unpublished()
+            ->create()
+            ->each(function ($article) {
+                $article->tags()->attach(
+                    Tag::inRandomOrder()
+                        ->take(rand(2, 5))
+                        ->pluck('id')
+                );
+            });
     }
 }

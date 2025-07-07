@@ -54,6 +54,11 @@ class Tag extends Model
             ->withTimestamps();
     }
 
+    public function articles()
+    {
+        return $this->belongsToMany(Article::class);
+    }
+
     // ====================
     // SCOPES
     // ====================
