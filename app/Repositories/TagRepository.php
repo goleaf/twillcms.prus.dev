@@ -25,7 +25,9 @@ class TagRepository
         return $this->model->withCount(['articles' => function ($query) {
                 $query->published();
             }])
+            ->groupBy('tags.id')
             ->orderBy('name')
+            ->having('articles_count', '>', 0)
             ->paginate($perPage);
     }
 
@@ -38,6 +40,7 @@ class TagRepository
             return $this->model->withCount(['articles' => function ($query) {
                     $query->published();
                 }])
+                ->groupBy('tags.id')
                 ->having('articles_count', '>', 0)
                 ->orderBy('name')
                 ->get();
@@ -61,6 +64,7 @@ class TagRepository
             return $this->model->withCount(['articles' => function ($query) {
                     $query->published();
                 }])
+                ->groupBy('tags.id')
                 ->having('articles_count', '>', 0)
                 ->orderByDesc('articles_count')
                 ->limit($limit)
@@ -78,6 +82,7 @@ class TagRepository
                     $query->published();
                 }])
                 ->featured()
+                ->groupBy('tags.id')
                 ->having('articles_count', '>', 0)
                 ->orderByDesc('articles_count')
                 ->limit($limit)
@@ -94,6 +99,7 @@ class TagRepository
                 $query->published();
             }])
             ->search($term)
+            ->groupBy('tags.id')
             ->having('articles_count', '>', 0)
             ->orderBy('name')
             ->paginate($perPage);
@@ -108,6 +114,7 @@ class TagRepository
             return $this->model->withCount(['articles' => function ($query) {
                     $query->published();
                 }])
+                ->groupBy('tags.id')
                 ->having('articles_count', '>', 0)
                 ->orderByDesc('articles_count')
                 ->get();
@@ -123,6 +130,7 @@ class TagRepository
             return $this->model->withCount(['articles' => function ($query) {
                     $query->published();
                 }])
+                ->groupBy('tags.id')
                 ->having('articles_count', '>', 0)
                 ->orderByDesc('articles_count')
                 ->limit($limit)
@@ -164,19 +172,18 @@ class TagRepository
      */
     public function getStatistics(): array
     {
-        return Cache::remember('tags_statistics', 3600, function () {
-            return [
-                'total_tags' => $this->model->count(),
-                'active_tags' => $this->model->whereHas('articles', function ($query) {
-                    $query->published();
-                })->count(),
-                'featured_tags' => $this->model->featured()->count(),
-                'most_used' => $this->model->withCount(['articles' => function ($query) {
-                    $query->published();
-                }])->orderByDesc('articles_count')->first(['name', 'articles_count']),
-                'recent_tags' => $this->model->latest()->take(5)->get(['name', 'created_at']),
-            ];
-        });
+        Cache::forget('tags_statistics');
+        return [
+            'total' => $this->model->count(),
+            'active' => $this->model->whereHas('articles', function ($query) {
+                $query->published();
+            })->count(),
+            'featured' => $this->model->featured()->count(),
+            'most_used' => $this->model->withCount(['articles' => function ($query) {
+                $query->published();
+            }])->orderByDesc('articles_count')->first(['name', 'articles_count']),
+            'recent_tags' => $this->model->whereNotNull('created_at')->latest()->take(5)->get(['name', 'created_at']),
+        ];
     }
 
     /**

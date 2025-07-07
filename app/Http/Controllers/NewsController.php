@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Article;
+use App\Models\Post;
 use App\Models\Tag;
 use App\Repositories\ArticleRepository;
 use App\Repositories\TagRepository;
@@ -57,7 +58,7 @@ class NewsController extends Controller
 
         return view('news.index', compact(
             'featuredNews',
-            'latestNews', 
+            'latestNews',
             'popularTags',
             'categories'
         ));
@@ -86,7 +87,7 @@ class NewsController extends Controller
     public function search(Request $request)
     {
         $query = $request->get('q');
-        
+
         if (empty($query)) {
             return view('news.search', [
                 'articles' => collect(),
@@ -100,4 +101,4 @@ class NewsController extends Controller
 
         return view('news.search', compact('articles', 'query', 'totalResults'));
     }
-} 
+}

@@ -6,6 +6,7 @@ use App\Models\Post;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
+use App\Services\ImageGenerationService;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Post>
@@ -22,16 +23,24 @@ class PostFactory extends Factory
     public function definition(): array
     {
         $title = fake()->sentence(4);
+        $content = fake()->paragraphs(5, true);
+        $imageService = app(ImageGenerationService::class);
+        $filename = $imageService->generatePostImage(null, $title, 'post');
+        $imagePath = 'images/posts/' . $filename;
+        $status = fake()->randomElement(['published', 'draft']);
+        $publishedAt = $status === 'published' ? fake()->dateTimeBetween('-3 months', 'now') : now();
+        $updatedAt = fake()->dateTimeBetween($publishedAt, 'now');
 
         return [
             'title' => $title,
             'slug' => Str::slug($title),
-            'content' => fake()->paragraphs(5, true),
+            'content' => $content,
             'excerpt' => fake()->paragraph(),
-            'featured_image' => fake()->imageUrl(800, 600, 'articles'),
-            'status' => 'draft',
+            'featured_image' => $imagePath,
+            'status' => $status,
             'user_id' => User::factory(),
-            'published_at' => null,
+            'published_at' => $publishedAt,
+            'updated_at' => $updatedAt,
         ];
     }
 

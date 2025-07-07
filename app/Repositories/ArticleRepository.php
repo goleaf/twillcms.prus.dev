@@ -160,14 +160,13 @@ class ArticleRepository
      */
     public function getCountByStatus(): array
     {
-        return Cache::remember('articles_count_by_status', 3600, function () {
-            return [
-                'total' => $this->model->count(),
-                'published' => $this->model->published()->count(),
-                'draft' => $this->model->where('is_published', false)->count(),
-                'featured' => $this->model->featured()->published()->count(),
-            ];
-        });
+        Cache::forget('articles_count_by_status');
+        return [
+            'total' => $this->model->count(),
+            'published' => $this->model->published()->count(),
+            'draft' => $this->model->where('is_published', false)->count(),
+            'featured' => $this->model->featured()->published()->count(),
+        ];
     }
 
     /**
@@ -175,17 +174,17 @@ class ArticleRepository
      */
     public function getStatistics(): array
     {
-        return Cache::remember('articles_statistics', 3600, function () {
-            return [
-                'total_articles' => $this->model->count(),
-                'published_articles' => $this->model->published()->count(),
-                'featured_articles' => $this->model->featured()->published()->count(),
-                'total_views' => $this->model->sum('view_count'),
-                'average_reading_time' => $this->model->avg('reading_time'),
-                'most_viewed' => $this->model->published()->orderByDesc('view_count')->first(['title', 'view_count']),
-                'recent_articles' => $this->model->published()->latest('published_at')->take(5)->get(['title', 'published_at']),
-            ];
-        });
+        Cache::forget('articles_statistics');
+        return [
+            'total' => $this->model->count(),
+            'published' => $this->model->published()->count(),
+            'draft' => $this->model->where('is_published', false)->count(),
+            'featured' => $this->model->featured()->published()->count(),
+            'total_views' => $this->model->sum('view_count'),
+            'average_reading_time' => $this->model->avg('reading_time'),
+            'most_viewed' => $this->model->published()->orderByDesc('view_count')->first(['title', 'view_count']),
+            'recent_articles' => $this->model->published()->whereNotNull('published_at')->whereNotNull('updated_at')->latest('published_at')->take(5)->get(['title', 'published_at', 'updated_at']),
+        ];
     }
 
     /**

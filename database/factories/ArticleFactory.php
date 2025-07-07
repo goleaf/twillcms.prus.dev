@@ -5,6 +5,7 @@ namespace Database\Factories;
 use App\Models\Article;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
+use App\Services\ImageGenerationService;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Article>
@@ -20,22 +21,31 @@ class ArticleFactory extends Factory
     {
         $title = fake()->sentence(rand(3, 8));
         $content = $this->generateContent();
-        $publishedAt = fake()->dateTimeBetween('-1 year', 'now');
-        
+        $isPublished = fake()->boolean(85); // 85% chance of being published
+        $status = $isPublished ? 'published' : 'draft';
+        $publishedAt = $isPublished ? fake()->dateTimeBetween('-1 year', 'now') : null;
+        $updatedAt = $publishedAt ? fake()->dateTimeBetween($publishedAt, 'now') : now();
+
+        // Generate a local image using the service
+        $imageService = app(ImageGenerationService::class);
+        $filename = $imageService->generatePostImage(null, $title, 'article');
+        $imagePath = 'images/posts/' . $filename;
+
         return [
             'title' => $title,
             'slug' => Str::slug($title),
             'excerpt' => fake()->paragraph(rand(2, 4)),
             'content' => $content,
-            'image' => $this->generateImagePath(),
+            'image' => $imagePath,
             'image_caption' => fake()->sentence(rand(3, 6)),
             'is_featured' => fake()->boolean(15), // 15% chance of being featured
-            'is_published' => fake()->boolean(85), // 85% chance of being published
+            'is_published' => $isPublished,
+            'status' => $status,
             'published_at' => $publishedAt,
             'reading_time' => Article::calculateReadingTime($content),
             'view_count' => fake()->numberBetween(0, 5000),
-            'created_at' => $publishedAt,
-            'updated_at' => fake()->dateTimeBetween($publishedAt, 'now'),
+            'created_at' => $publishedAt ?? now(),
+            'updated_at' => $updatedAt,
         ];
     }
 

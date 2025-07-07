@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('image_caption')->nullable();
             $table->boolean('is_featured')->default(false);
             $table->boolean('is_published')->default(false);
+            $table->string('status')->default('draft');
             $table->timestamp('published_at')->nullable();
             $table->integer('reading_time')->default(1);
             $table->unsignedInteger('view_count')->default(0);
@@ -36,6 +37,7 @@ return new class extends Migration
             $table->index(['is_featured', 'is_published', 'published_at']);
             $table->index(['is_published', 'view_count']);
             $table->index(['is_featured', 'view_count']);
+            $table->index('status');
         });
     }
 

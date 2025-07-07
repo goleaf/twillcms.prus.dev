@@ -216,10 +216,14 @@
                                                 <p class="text-sm text-gray-900 dark:text-white">
                                                     <a href="{{ route('admin.articles.edit', $article) }}" class="font-medium hover:text-indigo-600">{{ $article->title }}</a>
                                                 </p>
-                                                <p class="text-sm text-gray-500 dark:text-gray-400">{{ $article->status }}</p>
+                                                <p class="text-sm text-gray-500 dark:text-gray-400">
+                                                    {{ $article->is_published ? 'Published' : 'Draft' }}
+                                                </p>
                                             </div>
                                             <div class="text-right text-sm whitespace-nowrap text-gray-500 dark:text-gray-400">
-                                                <time datetime="{{ $article->updated_at->format('Y-m-d') }}">{{ $article->updated_at->diffForHumans() }}</time>
+                                                <time datetime="{{ $article->updated_at ? $article->updated_at->format('Y-m-d') : '' }}">
+                                                    {{ $article->updated_at ? $article->updated_at->diffForHumans() : 'N/A' }}
+                                                </time>
                                             </div>
                                         </div>
                                     </div>

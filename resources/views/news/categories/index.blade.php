@@ -18,7 +18,7 @@
             @foreach($categories as $category)
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
                 @if($category->image)
-                    <img src="{{ $category->image }}" 
+                    <img src="{{ asset('storage/' . $category->image) }}" 
                          alt="{{ $category->title }}"
                          class="w-full h-48 object-cover">
                 @else

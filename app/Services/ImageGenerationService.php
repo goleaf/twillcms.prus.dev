@@ -291,20 +291,25 @@ class ImageGenerationService
      */
     private function addTitleOverlay($image, string $title, int $width, int $height, string $type = 'post'): void
     {
-        // Prepare title - limit length and add line breaks
-        $title = $this->prepareTitle($title, $type === 'category' ? 30 : 60);
+        $fontPath = '/usr/share/fonts/google-droid-sans-fonts/DroidSans.ttf';
+        $fontSize = $type === 'category' ? 36 : 48;
+        $textColor = '#ffffff';
+        $shadowColor = 'rgba(0,0,0,0.5)';
+        $preparedTitle = $this->prepareTitle($title, 60);
 
-        // Add semi-transparent overlay for text readability
-        $image->rectangle(0, $height * 0.6, $width, $height, function ($draw) {
-            $draw->background('rgba(0, 0, 0, 0.4)');
-        });
-
-        // Add title text
-        $fontSize = $type === 'category' ? 32 : 28;
-        $image->text($title, $width / 2, $height * 0.75, function ($font) use ($fontSize) {
-            $font->file(storage_path('fonts/arial.ttf')); // You may need to add fonts
+        // Add shadow for better readability
+        $image->text($preparedTitle, $width / 2 + 2, $height / 2 + 2, function ($font) use ($fontPath, $fontSize, $shadowColor) {
+            $font->file($fontPath);
             $font->size($fontSize);
-            $font->color('#ffffff');
+            $font->color($shadowColor);
+            $font->align('center');
+            $font->valign('center');
+        });
+        // Add main text
+        $image->text($preparedTitle, $width / 2, $height / 2, function ($font) use ($fontPath, $fontSize, $textColor) {
+            $font->file($fontPath);
+            $font->size($fontSize);
+            $font->color($textColor);
             $font->align('center');
             $font->valign('center');
         });
@@ -376,11 +381,11 @@ class ImageGenerationService
     {
         // Add noise texture
         for ($i = 0; $i < 1000; $i++) {
-            $x = rand(0, $width);
-            $y = rand(0, $height);
+            $x = (int) rand(0, $width);
+            $y = (int) rand(0, $height);
             $opacity = rand(1, 5) / 100;
-
-            $image->pixel($x, $y, "rgba(255, 255, 255, {$opacity})");
+            $color = "rgba(255, 255, 255, {$opacity})";
+            $image->pixel($color, $x, $y);
         }
     }
 

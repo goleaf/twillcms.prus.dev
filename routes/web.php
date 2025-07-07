@@ -19,12 +19,13 @@ use App\Http\Controllers\Admin\AdminController;
 
 // News Portal Frontend Routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
-Route::get('/news/{article:slug}', [NewsController::class, 'show'])->name('article.show');
+Route::get('/news/{article:slug}', [NewsController::class, 'show'])->name('news.show');
 Route::get('/tag/{tag:slug}', [TagController::class, 'show'])->name('tag.show');
 Route::get('/search', [NewsController::class, 'search'])->name('search');
 
 // Tags Routes (unlimited categories)
 Route::get('/tags', [TagController::class, 'index'])->name('tags.index');
+Route::get('/tags/{tag:slug}', [TagController::class, 'show'])->name('tags.show');
 
 // Static Pages
 Route::view('/about', 'pages.about')->name('about');

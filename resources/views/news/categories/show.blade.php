@@ -9,7 +9,7 @@
     <div class="text-center mb-12">
         @if($category->image)
             <div class="w-24 h-24 mx-auto mb-4 rounded-full overflow-hidden">
-                <img src="{{ $category->image }}" 
+                <img src="{{ asset('storage/' . $category->image) }}" 
                      alt="{{ $category->title }}"
                      class="w-full h-full object-cover">
             </div>
@@ -52,7 +52,7 @@
             <article class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
                 <div class="aspect-w-16 aspect-h-9">
                     @if($article->featured_image)
-                        <img src="{{ $article->featured_image }}" 
+                        <img src="{{ asset('storage/' . $article->featured_image) }}" 
                              alt="{{ $article->title }}"
                              class="w-full h-48 object-cover">
                     @else

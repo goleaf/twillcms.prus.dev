@@ -32,8 +32,13 @@ class EnhancedDatabaseSeeder extends Seeder
     {
         echo "🚀 Starting enhanced database seeding with performance optimization...\n";
 
-        // Disable foreign key checks for better performance
-        DB::statement('PRAGMA foreign_keys=OFF');
+        // Disable foreign key checks for better performance (cross-platform)
+        $driver = DB::getDriverName();
+        if ($driver === 'sqlite') {
+            DB::statement('PRAGMA foreign_keys=OFF');
+        } elseif ($driver === 'mysql') {
+            DB::statement('SET FOREIGN_KEY_CHECKS=0');
+        }
 
         try {
             // Create storage directories
@@ -48,13 +53,21 @@ class EnhancedDatabaseSeeder extends Seeder
             $this->createEnhancedPosts($categories);
 
             // Re-enable foreign keys
-            DB::statement('PRAGMA foreign_keys=ON');
+            if ($driver === 'sqlite') {
+                DB::statement('PRAGMA foreign_keys=ON');
+            } elseif ($driver === 'mysql') {
+                DB::statement('SET FOREIGN_KEY_CHECKS=1');
+            }
 
             echo "✅ Enhanced database seeding completed successfully!\n";
             $this->displayStatistics();
 
         } catch (\Exception $e) {
-            DB::statement('PRAGMA foreign_keys=ON');
+            if ($driver === 'sqlite') {
+                DB::statement('PRAGMA foreign_keys=ON');
+            } elseif ($driver === 'mysql') {
+                DB::statement('SET FOREIGN_KEY_CHECKS=1');
+            }
             echo '❌ Seeding failed: '.$e->getMessage()."\n";
             throw $e;
         }
@@ -201,7 +214,7 @@ class EnhancedDatabaseSeeder extends Seeder
                 $post = Post::create([
                     'published' => rand(1, 100) <= 85, // 85% published
                     'position' => $position,
-                    'created_at' => now()->subDays(rand(0, 730)), // Random date within 2 years
+                    'created_at' => now()->subDays(rand(0, 730))->format('Y-m-d H:i:s'), // Random date within 2 years, formatted
                 ]);
 
                 // Generate content using service
@@ -253,7 +266,7 @@ class EnhancedDatabaseSeeder extends Seeder
 
                 // Update post timestamp for realistic distribution
                 $post->update([
-                    'updated_at' => now()->subDays(rand(0, 30)),
+                    'updated_at' => now()->subDays(rand(0, 30))->format('Y-m-d H:i:s'),
                 ]);
 
                 if (($position % 10) === 0) {
