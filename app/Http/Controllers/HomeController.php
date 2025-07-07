@@ -27,11 +27,11 @@ class HomeController extends Controller
             'featured' => $request->query('featured'),
         ];
 
-        $articles = $this->articleRepository->getAllPaginated(12, $filters);
+        $latestArticles = $this->articleRepository->getAllPaginated(12, $filters);
         $featuredArticles = $this->articleRepository->getFeatured(5);
         $tags = $this->tagRepository->getWithArticleCounts();
 
-        return view('news.home', compact('articles', 'featuredArticles', 'tags'));
+        return view('news.home', compact('latestArticles', 'featuredArticles', 'tags'));
     }
 
     public function show(Article $article)
