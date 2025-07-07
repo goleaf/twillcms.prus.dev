@@ -3,23 +3,38 @@
 namespace App\Http\Controllers;
 
 use App\Models\Tag;
-use App\Models\Post;
+use App\Repositories\TagRepository;
+use App\Repositories\ArticleRepository;
 use Illuminate\Http\Request;
 
 class TagController extends Controller
 {
+    protected TagRepository $tagRepository;
+    protected ArticleRepository $articleRepository;
+
+    public function __construct(TagRepository $tagRepository, ArticleRepository $articleRepository)
+    {
+        $this->tagRepository = $tagRepository;
+        $this->articleRepository = $articleRepository;
+    }
+
     /**
      * Display a listing of all tags
      */
-    public function index()
+    public function index(Request $request)
     {
-        $tags = Tag::withCount(['posts' => function ($query) {
-            $query->where('status', 'published');
-        }])
-        ->orderBy('name')
-        ->get();
+        $search = $request->query('search');
+        
+        if ($search) {
+            $tags = $this->tagRepository->search($search, 20);
+        } else {
+            $tags = $this->tagRepository->getAllPaginated(20);
+        }
 
-        return view('news.tags.index', compact('tags'));
+        $popularTags = $this->tagRepository->getPopular(10);
+        $featuredTags = $this->tagRepository->getFeatured(5);
+
+        return view('news.tags.index', compact('tags', 'popularTags', 'featuredTags', 'search'));
     }
 
     /**
@@ -27,28 +42,10 @@ class TagController extends Controller
      */
     public function show(Tag $tag)
     {
-        $posts = Post::whereHas('tags', function ($query) use ($tag) {
-            $query->where('tags.id', $tag->id);
-        })
-        ->where('status', 'published')
-        ->with(['tags', 'categories'])
-        ->latest()
-        ->paginate(12);
+        $articles = $this->articleRepository->getByTag($tag, 12);
+        $relatedTags = $this->tagRepository->getRelated($tag, 5);
+        $popularTags = $this->tagRepository->getPopular(10);
 
-        // Get related tags (tags that appear with this tag in other posts)
-        $relatedTags = Tag::whereHas('posts', function ($query) use ($tag) {
-            $query->whereHas('tags', function ($subQuery) use ($tag) {
-                $subQuery->where('tags.id', $tag->id);
-            });
-        })
-        ->where('id', '!=', $tag->id)
-        ->withCount(['posts' => function ($query) {
-            $query->where('status', 'published');
-        }])
-        ->orderBy('posts_count', 'desc')
-        ->take(10)
-        ->get();
-
-        return view('news.tags.show', compact('tag', 'posts', 'relatedTags'));
+        return view('news.tags.show', compact('tag', 'articles', 'relatedTags', 'popularTags'));
     }
 } 

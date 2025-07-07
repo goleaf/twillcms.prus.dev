@@ -1,11 +1,10 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\NewsController;
-use App\Http\Controllers\ArticleController;
-use App\Http\Controllers\TagController;
-use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\TagController;
+use App\Http\Controllers\NewsController;
+use App\Http\Controllers\Admin\AdminController;
 
 /*
 |--------------------------------------------------------------------------
@@ -20,27 +19,44 @@ use App\Http\Controllers\HomeController;
 
 // News Portal Frontend Routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
-Route::get('/article/{article}', [HomeController::class, 'show'])->name('article.show');
-Route::get('/tag/{tag}', [HomeController::class, 'tag'])->name('tag.show');
-
-// Tags (unlimited categories)
-Route::get('/tags', [TagController::class, 'index'])->name('tags.index');
-Route::get('/tags/{tag}', [TagController::class, 'show'])->name('tags.show');
-
-// Categories (legacy support)
-Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
-Route::get('/categories/{slug}', [CategoryController::class, 'show'])->name('categories.show');
-
-// Search functionality
+Route::get('/news/{article:slug}', [NewsController::class, 'show'])->name('article.show');
+Route::get('/tag/{tag:slug}', [TagController::class, 'show'])->name('tag.show');
 Route::get('/search', [NewsController::class, 'search'])->name('search');
 
-// Admin Routes
-Route::prefix('admin')->name('admin.')->group(function () {
-    Route::get('/', function () {
-        return view('admin.dashboard');
-    })->name('dashboard');
+// Tags Routes (unlimited categories)
+Route::get('/tags', [TagController::class, 'index'])->name('tags.index');
 
-    Route::resource('posts', App\Http\Controllers\Admin\PostController::class);
-    Route::resource('categories', App\Http\Controllers\Admin\CategoryController::class);
-    Route::resource('tags', App\Http\Controllers\Admin\TagController::class);
+// Static Pages
+Route::view('/about', 'pages.about')->name('about');
+Route::view('/contact', 'pages.contact')->name('contact');
+Route::view('/privacy', 'pages.privacy')->name('privacy');
+Route::view('/terms', 'pages.terms')->name('terms');
+
+// Admin Routes (no authentication as per requirements)
+Route::prefix('admin')->name('admin.')->group(function () {
+    Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
+    
+    // Articles Management
+    Route::get('/articles', [AdminController::class, 'articles'])->name('articles.index');
+    Route::get('/articles/create', [AdminController::class, 'createArticle'])->name('articles.create');
+    Route::post('/articles', [AdminController::class, 'storeArticle'])->name('articles.store');
+    Route::get('/articles/{article}', [AdminController::class, 'showArticle'])->name('articles.show');
+    Route::get('/articles/{article}/edit', [AdminController::class, 'editArticle'])->name('articles.edit');
+    Route::put('/articles/{article}', [AdminController::class, 'updateArticle'])->name('articles.update');
+    Route::delete('/articles/{article}', [AdminController::class, 'destroyArticle'])->name('articles.destroy');
+    Route::post('/articles/bulk-action', [AdminController::class, 'bulkActionArticles'])->name('articles.bulk-action');
+    
+    // Tags Management
+    Route::get('/tags', [AdminController::class, 'tags'])->name('tags.index');
+    Route::get('/tags/create', [AdminController::class, 'createTag'])->name('tags.create');
+    Route::post('/tags', [AdminController::class, 'storeTag'])->name('tags.store');
+    Route::get('/tags/{tag}', [AdminController::class, 'showTag'])->name('tags.show');
+    Route::get('/tags/{tag}/edit', [AdminController::class, 'editTag'])->name('tags.edit');
+    Route::put('/tags/{tag}', [AdminController::class, 'updateTag'])->name('tags.update');
+    Route::delete('/tags/{tag}', [AdminController::class, 'destroyTag'])->name('tags.destroy');
+    Route::post('/tags/bulk-action', [AdminController::class, 'bulkActionTags'])->name('tags.bulk-action');
+    
+    // Statistics and Analytics
+    Route::get('/statistics', [AdminController::class, 'statistics'])->name('statistics');
+    Route::get('/analytics', [AdminController::class, 'analytics'])->name('analytics');
 });

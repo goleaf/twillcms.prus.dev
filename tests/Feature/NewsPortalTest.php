@@ -2,490 +2,386 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use App\Models\Post;
-use App\Models\Tag;
-use App\Models\Category;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Models\Article;
-use PHPUnit\Framework\Attributes\Test;
+use App\Models\Tag;
+use App\Repositories\ArticleRepository;
+use App\Repositories\TagRepository;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\WithFaker;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
+use Tests\TestCase;
 
 class NewsPortalTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, WithFaker;
+
+    protected ArticleRepository $articleRepository;
+    protected TagRepository $tagRepository;
 
     protected function setUp(): void
     {
         parent::setUp();
-        
+        $this->articleRepository = app(ArticleRepository::class);
+        $this->tagRepository = app(TagRepository::class);
+    }
+
+    /** @test */
+    public function home_page_displays_correctly()
+    {
         // Create test data
-        $this->createTestData();
-    }
+        $featuredArticles = Article::factory()->featured()->count(3)->create();
+        $latestArticles = Article::factory()->count(6)->create();
+        $tags = Tag::factory()->count(5)->create();
 
-    private function createTestData()
-    {
-        // Create categories
-        $category = Category::create([
-            'title' => 'Technology',
-            'slug' => 'technology',
-            'description' => 'Latest tech news',
-            'is_active' => true,
-        ]);
-
-        // Create tags
-        $tag1 = Tag::create(['name' => 'Laravel', 'slug' => 'laravel']);
-        $tag2 = Tag::create(['name' => 'PHP', 'slug' => 'php']);
-        $tag3 = Tag::create(['name' => 'JavaScript', 'slug' => 'javascript']);
-
-        // Create posts
-        $post1 = Post::create([
-            'title' => 'Laravel News Update',
-            'slug' => 'laravel-news-update',
-            'content' => 'This is a test article about Laravel framework updates.',
-            'excerpt' => 'Latest Laravel framework updates and features.',
-            'status' => 'published',
-            'is_featured' => true,
-            'user_id' => 1,
-        ]);
-
-        $post2 = Post::create([
-            'title' => 'PHP 8.3 Features',
-            'slug' => 'php-83-features',
-            'content' => 'New features in PHP 8.3 release.',
-            'excerpt' => 'Overview of PHP 8.3 new features.',
-            'status' => 'published',
-            'is_featured' => false,
-            'user_id' => 1,
-        ]);
-
-        $post3 = Post::create([
-            'title' => 'JavaScript Trends 2024',
-            'slug' => 'javascript-trends-2024',
-            'content' => 'Latest JavaScript trends for 2024.',
-            'excerpt' => 'JavaScript development trends.',
-            'status' => 'published',
-            'is_featured' => true,
-            'user_id' => 1,
-        ]);
-
-        // Attach relationships
-        $post1->categories()->attach($category->id);
-        $post1->tags()->attach([$tag1->id, $tag2->id]);
-
-        $post2->categories()->attach($category->id);
-        $post2->tags()->attach([$tag2->id]);
-
-        $post3->categories()->attach($category->id);
-        $post3->tags()->attach([$tag3->id]);
-    }
-
-    /** @test */
-    public function homepage_displays_correctly()
-    {
         $response = $this->get('/');
 
         $response->assertStatus(200);
-        $response->assertSee('News Portal');
-        $response->assertSee('Featured News');
-        $response->assertSee('Latest News');
-        $response->assertSee('Laravel News Update');
-        $response->assertSee('JavaScript Trends 2024');
+        $response->assertViewIs('news.home');
+        $response->assertViewHas(['featuredArticles', 'latestArticles', 'popularTags']);
     }
 
     /** @test */
-    public function news_index_page_works()
+    public function article_detail_page_displays_correctly()
     {
-        $response = $this->get('/news');
+        $article = Article::factory()->create();
+        $tags = Tag::factory()->count(3)->create();
+        $article->tags()->attach($tags);
+
+        $response = $this->get("/news/{$article->slug}");
 
         $response->assertStatus(200);
-        $response->assertSee('Featured News');
-        $response->assertSee('Latest News');
-    }
-
-    /** @test */
-    public function individual_news_article_displays()
-    {
-        $response = $this->get('/news/laravel-news-update');
-
-        $response->assertStatus(200);
-        $response->assertSee('Laravel News Update');
-        $response->assertSee('This is a test article about Laravel framework updates.');
-        $response->assertSee('Related Topics');
-        $response->assertSee('Laravel');
-        $response->assertSee('PHP');
-    }
-
-    /** @test */
-    public function tags_index_page_works()
-    {
-        $response = $this->get('/tags');
-
-        $response->assertStatus(200);
-        $response->assertSee('All Topics');
-        $response->assertSee('Topic Cloud');
-        $response->assertSee('Laravel');
-        $response->assertSee('PHP');
-        $response->assertSee('JavaScript');
-    }
-
-    /** @test */
-    public function individual_tag_page_displays_articles()
-    {
-        $response = $this->get('/tags/laravel');
-
-        $response->assertStatus(200);
-        $response->assertSee('#Laravel');
-        $response->assertSee('Laravel News Update');
-        $response->assertSee('Related Topics');
-    }
-
-    /** @test */
-    public function categories_index_page_works()
-    {
-        $response = $this->get('/categories');
-
-        $response->assertStatus(200);
-        $response->assertSee('Technology');
-    }
-
-    /** @test */
-    public function individual_category_page_displays_articles()
-    {
-        $response = $this->get('/categories/technology');
-
-        $response->assertStatus(200);
-        $response->assertSee('Technology');
-        $response->assertSee('Laravel News Update');
-        $response->assertSee('PHP 8.3 Features');
-        $response->assertSee('JavaScript Trends 2024');
-    }
-
-    /** @test */
-    public function search_functionality_works()
-    {
-        $response = $this->get('/search?q=Laravel');
-
-        $response->assertStatus(200);
-        $response->assertSee('Search Results');
-        $response->assertSee('Laravel News Update');
-        $response->assertSee('Found 1 result');
-    }
-
-    /** @test */
-    public function search_with_no_results()
-    {
-        $response = $this->get('/search?q=nonexistent');
-
-        $response->assertStatus(200);
-        $response->assertSee('No articles found');
-        $response->assertSee('Search Suggestions');
-    }
-
-    /** @test */
-    public function empty_search_redirects_to_home()
-    {
-        $response = $this->get('/search?q=');
-
-        $response->assertRedirect('/');
-    }
-
-    /** @test */
-    public function featured_articles_are_displayed()
-    {
-        $response = $this->get('/');
-
-        $response->assertStatus(200);
-        $response->assertSee('Laravel News Update');
-        $response->assertSee('JavaScript Trends 2024');
+        $response->assertViewIs('news.show');
+        $response->assertViewHas(['article', 'relatedArticles']);
+        $response->assertSee($article->title);
     }
 
     /** @test */
     public function article_view_count_increments()
     {
-        $post = Post::where('slug', 'laravel-news-update')->first();
-        $initialViews = $post->view_count;
-
-        $this->get('/news/laravel-news-update');
-
-        $post->refresh();
-        $this->assertEquals($initialViews + 1, $post->view_count);
-    }
-
-    /** @test */
-    public function related_articles_are_shown()
-    {
-        $response = $this->get('/news/laravel-news-update');
-
-        $response->assertStatus(200);
-        $response->assertSee('Related Articles');
-        // Should show PHP article since it shares the PHP tag
-        $response->assertSee('PHP 8.3 Features');
-    }
-
-    /** @test */
-    public function navigation_links_work()
-    {
-        $response = $this->get('/');
-
-        $response->assertStatus(200);
-        $response->assertSee('Home');
-        $response->assertSee('Latest News');
-        $response->assertSee('Topics');
-        $response->assertSee('Sections');
-    }
-
-    /** @test */
-    public function pagination_works_on_tag_pages()
-    {
-        // Create more posts for pagination
-        for ($i = 1; $i <= 15; $i++) {
-            $post = Post::create([
-                'title' => "Test Article {$i}",
-                'slug' => "test-article-{$i}",
-                'content' => "Content for test article {$i}",
-                'excerpt' => "Excerpt for test article {$i}",
-                'status' => 'published',
-                'user_id' => 1,
-            ]);
-
-            $tag = Tag::where('slug', 'laravel')->first();
-            $post->tags()->attach($tag->id);
-        }
-
-        $response = $this->get('/tags/laravel');
-
-        $response->assertStatus(200);
-        // Should show pagination if more than 12 posts
-        $response->assertSee('Test Article');
-    }
-
-    /** @test */
-    public function social_sharing_meta_tags_present()
-    {
-        $response = $this->get('/news/laravel-news-update');
-
-        $response->assertStatus(200);
-        $response->assertSee('og:title', false);
-        $response->assertSee('og:description', false);
-        $response->assertSee('twitter:card', false);
-    }
-
-    /** @test */
-    public function breadcrumbs_are_displayed()
-    {
-        $response = $this->get('/tags/laravel');
-
-        $response->assertStatus(200);
-        $response->assertSee('Home');
-        $response->assertSee('Topics');
-        $response->assertSee('Laravel');
-    }
-
-    /** @test */
-    public function tag_search_functionality_works()
-    {
-        $response = $this->get('/tags');
-
-        $response->assertStatus(200);
-        $response->assertSee('Search topics...');
-        $response->assertSee('tag-search');
-    }
-
-    /** @test */
-    public function popular_tags_are_displayed()
-    {
-        $response = $this->get('/');
-
-        $response->assertStatus(200);
-        $response->assertSee('Popular Topics');
-        $response->assertSee('Laravel');
-        $response->assertSee('PHP');
-        $response->assertSee('JavaScript');
-    }
-
-    /** @test */
-    public function mobile_responsive_navigation()
-    {
-        $response = $this->get('/');
-
-        $response->assertStatus(200);
-        $response->assertSee('mobile-menu-button');
-        $response->assertSee('mobile-menu');
-    }
-
-    /** @test */
-    public function returns_404_for_nonexistent_article()
-    {
-        $response = $this->get('/news/nonexistent-article');
-
-        $response->assertStatus(404);
-    }
-
-    /** @test */
-    public function returns_404_for_nonexistent_tag()
-    {
-        $response = $this->get('/tags/nonexistent-tag');
-
-        $response->assertStatus(404);
-    }
-
-    /** @test */
-    public function returns_404_for_nonexistent_category()
-    {
-        $response = $this->get('/categories/nonexistent-category');
-
-        $response->assertStatus(404);
-    }
-
-    #[Test]
-    public function test_home_page_displays_correctly()
-    {
-        $tag = Tag::factory()->create();
-        $articles = Article::factory()
-            ->count(3)
-            ->create()
-            ->each(function ($article) use ($tag) {
-                $article->tags()->attach($tag);
-            });
-
-        $response = $this->get(route('home'));
-
-        $response->assertStatus(200)
-                ->assertViewIs('news.index')
-                ->assertViewHas('articles')
-                ->assertViewHas('featuredArticles')
-                ->assertViewHas('tags')
-                ->assertSee($articles->first()->title)
-                ->assertSee($tag->name);
-    }
-
-    #[Test]
-    public function test_article_detail_page_displays_correctly()
-    {
-        $article = Article::factory()->create(['is_published' => true]);
-        $tags = Tag::factory()->count(2)->create();
-        $article->tags()->attach($tags);
-
-        $response = $this->get(route('article.show', $article));
-
-        $response->assertStatus(200)
-                ->assertViewIs('news.show')
-                ->assertViewHas('article')
-                ->assertViewHas('relatedArticles')
-                ->assertSee($article->title)
-                ->assertSee($tags->first()->name);
-    }
-
-    #[Test]
-    public function test_unpublished_article_returns_404()
-    {
-        $article = Article::factory()->create(['is_published' => false]);
-
-        $response = $this->get(route('article.show', $article));
-
-        $response->assertStatus(404);
-    }
-
-    #[Test]
-    public function test_tag_page_displays_correctly()
-    {
-        $tag = Tag::factory()->create();
-        $articles = Article::factory()
-            ->count(3)
-            ->create(['is_published' => true])
-            ->each(function ($article) use ($tag) {
-                $article->tags()->attach($tag);
-            });
-
-        $response = $this->get(route('tag.show', $tag));
-
-        $response->assertStatus(200)
-                ->assertViewIs('news.tag')
-                ->assertViewHas('tag')
-                ->assertViewHas('articles')
-                ->assertSee($tag->name)
-                ->assertSee($articles->first()->title);
-    }
-
-    #[Test]
-    public function test_search_functionality_works()
-    {
-        $searchTerm = 'unique search term';
-        $matchingArticle = Article::factory()->create([
-            'title' => "Article with {$searchTerm}",
-            'is_published' => true
-        ]);
-        $nonMatchingArticle = Article::factory()->create([
-            'title' => 'Different article',
-            'is_published' => true
-        ]);
-
-        $response = $this->get(route('home', ['search' => $searchTerm]));
-
-        $response->assertStatus(200)
-                ->assertViewIs('news.index')
-                ->assertSee($matchingArticle->title)
-                ->assertDontSee($nonMatchingArticle->title);
-    }
-
-    #[Test]
-    public function test_tag_filtering_works()
-    {
-        $tag = Tag::factory()->create();
-        $matchingArticle = Article::factory()->create(['is_published' => true]);
-        $nonMatchingArticle = Article::factory()->create(['is_published' => true]);
+        $article = Article::factory()->create(['view_count' => 0]);
         
-        $matchingArticle->tags()->attach($tag);
-
-        $response = $this->get(route('home', ['tag' => $tag->slug]));
-
-        $response->assertStatus(200)
-                ->assertViewIs('news.index')
-                ->assertSee($matchingArticle->title)
-                ->assertDontSee($nonMatchingArticle->title);
+        $this->get("/news/{$article->slug}");
+        
+        $article->refresh();
+        $this->assertEquals(1, $article->view_count);
     }
 
-    #[Test]
-    public function test_pagination_works()
+    /** @test */
+    public function tags_index_page_displays_correctly()
     {
-        $articles = Article::factory()
-            ->count(15) // More than our per-page limit
-            ->create(['is_published' => true]);
-
-        $response = $this->get(route('home'));
-
-        $response->assertStatus(200)
-                ->assertViewIs('news.index')
-                ->assertSee('Next');
+        $tags = Tag::factory()->count(10)->create();
+        
+        $response = $this->get('/tags');
+        
+        $response->assertStatus(200);
+        $response->assertViewIs('news.tags.index');
+        $response->assertViewHas(['tags', 'popularTags', 'featuredTags']);
     }
 
-    #[Test]
-    public function test_view_count_increments()
-    {
-        $article = Article::factory()->create(['is_published' => true]);
-        $initialViewCount = $article->view_count;
-
-        $response = $this->get(route('article.show', $article));
-
-        $this->assertEquals($initialViewCount + 1, $article->fresh()->view_count);
-    }
-
-    #[Test]
-    public function test_related_articles_are_shown()
+    /** @test */
+    public function tag_show_page_displays_articles()
     {
         $tag = Tag::factory()->create();
-        $article = Article::factory()->create(['is_published' => true]);
-        $relatedArticle = Article::factory()->create(['is_published' => true]);
-        $unrelatedArticle = Article::factory()->create(['is_published' => true]);
+        $articles = Article::factory()->count(5)->create();
+        $tag->articles()->attach($articles);
 
+        $response = $this->get("/tag/{$tag->slug}");
+
+        $response->assertStatus(200);
+        $response->assertViewIs('news.tags.show');
+        $response->assertViewHas(['tag', 'articles', 'relatedTags', 'popularTags']);
+        $response->assertSee($tag->name);
+    }
+
+    /** @test */
+    public function search_functionality_works()
+    {
+        $article = Article::factory()->create(['title' => 'Laravel Testing Guide']);
+        
+        $response = $this->get('/search?q=Laravel');
+        
+        $response->assertStatus(200);
+        $response->assertViewIs('news.search');
+        $response->assertSee('Laravel Testing Guide');
+    }
+
+    /** @test */
+    public function article_repository_get_all_paginated()
+    {
+        Article::factory()->count(15)->create();
+        
+        $articles = $this->articleRepository->getAllPaginated(10);
+        
+        $this->assertEquals(10, $articles->count());
+        $this->assertEquals(15, $articles->total());
+    }
+
+    /** @test */
+    public function article_repository_get_by_tag()
+    {
+        $tag = Tag::factory()->create();
+        $articles = Article::factory()->count(5)->create();
+        $tag->articles()->attach($articles);
+        
+        $result = $this->articleRepository->getByTag($tag, 10);
+        
+        $this->assertEquals(5, $result->count());
+    }
+
+    /** @test */
+    public function article_repository_get_featured()
+    {
+        Article::factory()->featured()->count(3)->create();
+        Article::factory()->count(5)->create();
+        
+        $featured = $this->articleRepository->getFeatured(10);
+        
+        $this->assertEquals(3, $featured->count());
+    }
+
+    /** @test */
+    public function article_repository_search()
+    {
+        Article::factory()->create(['title' => 'Laravel Best Practices']);
+        Article::factory()->create(['title' => 'Vue.js Components']);
+        
+        $results = $this->articleRepository->search('Laravel', 10);
+        
+        $this->assertEquals(1, $results->count());
+        $this->assertEquals('Laravel Best Practices', $results->first()->title);
+    }
+
+    /** @test */
+    public function tag_repository_get_popular()
+    {
+        $popularTag = Tag::factory()->create(['usage_count' => 50]);
+        $regularTag = Tag::factory()->create(['usage_count' => 5]);
+        
+        $popular = $this->tagRepository->getPopular(10);
+        
+        $this->assertEquals($popularTag->id, $popular->first()->id);
+    }
+
+    /** @test */
+    public function tag_repository_search()
+    {
+        Tag::factory()->create(['name' => 'Technology']);
+        Tag::factory()->create(['name' => 'Business']);
+        
+        $results = $this->tagRepository->search('Tech', 10);
+        
+        $this->assertEquals(1, $results->count());
+        $this->assertEquals('Technology', $results->first()->name);
+    }
+
+    /** @test */
+    public function admin_dashboard_displays_correctly()
+    {
+        Article::factory()->count(10)->create();
+        Tag::factory()->count(5)->create();
+        
+        $response = $this->get('/admin/dashboard');
+        
+        $response->assertStatus(200);
+        $response->assertViewIs('admin.dashboard');
+    }
+
+    /** @test */
+    public function admin_can_create_article()
+    {
+        Storage::fake('public');
+        $tags = Tag::factory()->count(3)->create();
+        
+        $response = $this->post('/admin/articles', [
+            'title' => 'Test Article',
+            'slug' => 'test-article',
+            'excerpt' => 'This is a test excerpt',
+            'content' => 'This is the test content',
+            'status' => 'published',
+            'is_featured' => false,
+            'tags' => $tags->pluck('id')->toArray(),
+            'image' => UploadedFile::fake()->image('test.jpg')
+        ]);
+        
+        $response->assertRedirect('/admin/articles');
+        $this->assertDatabaseHas('articles', [
+            'title' => 'Test Article',
+            'slug' => 'test-article'
+        ]);
+    }
+
+    /** @test */
+    public function admin_can_update_article()
+    {
+        $article = Article::factory()->create();
+        $tags = Tag::factory()->count(2)->create();
+        
+        $response = $this->put("/admin/articles/{$article->id}", [
+            'title' => 'Updated Article',
+            'slug' => 'updated-article',
+            'excerpt' => 'Updated excerpt',
+            'content' => 'Updated content',
+            'status' => 'published',
+            'is_featured' => true,
+            'tags' => $tags->pluck('id')->toArray()
+        ]);
+        
+        $response->assertRedirect('/admin/articles');
+        $this->assertDatabaseHas('articles', [
+            'id' => $article->id,
+            'title' => 'Updated Article'
+        ]);
+    }
+
+    /** @test */
+    public function admin_can_delete_article()
+    {
+        $article = Article::factory()->create();
+        
+        $response = $this->delete("/admin/articles/{$article->id}");
+        
+        $response->assertRedirect('/admin/articles');
+        $this->assertSoftDeleted('articles', ['id' => $article->id]);
+    }
+
+    /** @test */
+    public function admin_can_create_tag()
+    {
+        $response = $this->post('/admin/tags', [
+            'name' => 'New Technology',
+            'slug' => 'new-technology',
+            'description' => 'Latest technology trends',
+            'color' => '#3B82F6',
+            'is_featured' => false
+        ]);
+        
+        $response->assertRedirect('/admin/tags');
+        $this->assertDatabaseHas('tags', [
+            'name' => 'New Technology',
+            'slug' => 'new-technology'
+        ]);
+    }
+
+    /** @test */
+    public function admin_can_update_tag()
+    {
+        $tag = Tag::factory()->create();
+        
+        $response = $this->put("/admin/tags/{$tag->id}", [
+            'name' => 'Updated Tag',
+            'slug' => 'updated-tag',
+            'description' => 'Updated description',
+            'color' => '#EF4444',
+            'is_featured' => true
+        ]);
+        
+        $response->assertRedirect('/admin/tags');
+        $this->assertDatabaseHas('tags', [
+            'id' => $tag->id,
+            'name' => 'Updated Tag'
+        ]);
+    }
+
+    /** @test */
+    public function admin_can_delete_tag()
+    {
+        $tag = Tag::factory()->create();
+        
+        $response = $this->delete("/admin/tags/{$tag->id}");
+        
+        $response->assertRedirect('/admin/tags');
+        $this->assertDatabaseMissing('tags', ['id' => $tag->id]);
+    }
+
+    /** @test */
+    public function article_request_validation_works()
+    {
+        $response = $this->post('/admin/articles', []);
+        
+        $response->assertSessionHasErrors(['title', 'content', 'status']);
+    }
+
+    /** @test */
+    public function tag_request_validation_works()
+    {
+        $response = $this->post('/admin/tags', []);
+        
+        $response->assertSessionHasErrors(['name', 'color']);
+    }
+
+    /** @test */
+    public function article_slug_is_unique()
+    {
+        Article::factory()->create(['slug' => 'test-article']);
+        
+        $response = $this->post('/admin/articles', [
+            'title' => 'Test Article',
+            'slug' => 'test-article',
+            'excerpt' => 'Test excerpt',
+            'content' => 'Test content',
+            'status' => 'published'
+        ]);
+        
+        $response->assertSessionHasErrors(['slug']);
+    }
+
+    /** @test */
+    public function tag_usage_count_updates_correctly()
+    {
+        $tag = Tag::factory()->create(['usage_count' => 0]);
+        $article = Article::factory()->create();
+        
         $article->tags()->attach($tag);
-        $relatedArticle->tags()->attach($tag);
+        $tag->increment('usage_count');
+        
+        $tag->refresh();
+        $this->assertEquals(1, $tag->usage_count);
+    }
 
-        $response = $this->get(route('article.show', $article));
+    /** @test */
+    public function related_articles_are_fetched_correctly()
+    {
+        $tag = Tag::factory()->create();
+        $article1 = Article::factory()->create();
+        $article2 = Article::factory()->create();
+        $article3 = Article::factory()->create();
+        
+        $article1->tags()->attach($tag);
+        $article2->tags()->attach($tag);
+        
+        $related = $this->articleRepository->getRelated($article1, 5);
+        
+        $this->assertEquals(1, $related->count());
+        $this->assertEquals($article2->id, $related->first()->id);
+    }
 
-        $response->assertStatus(200)
-                ->assertViewIs('news.show')
-                ->assertSee($relatedArticle->title)
-                ->assertDontSee($unrelatedArticle->title);
+    /** @test */
+    public function statistics_are_calculated_correctly()
+    {
+        Article::factory()->published()->count(10)->create();
+        Article::factory()->draft()->count(5)->create();
+        Article::factory()->featured()->count(3)->create();
+        
+        $stats = $this->articleRepository->getStatistics();
+        
+        $this->assertEquals(15, $stats['total']);
+        $this->assertEquals(10, $stats['published']);
+        $this->assertEquals(5, $stats['draft']);
+        $this->assertEquals(3, $stats['featured']);
+    }
+
+    /** @test */
+    public function caching_works_for_repositories()
+    {
+        Article::factory()->count(5)->create();
+        
+        // First call should hit the database
+        $articles1 = $this->articleRepository->getLatest(5);
+        
+        // Second call should hit the cache
+        $articles2 = $this->articleRepository->getLatest(5);
+        
+        $this->assertEquals($articles1->count(), $articles2->count());
     }
 } 

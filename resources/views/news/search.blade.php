@@ -4,188 +4,162 @@
 @section('description', 'Search results for "' . $query . '". Find relevant news articles, stories, and updates matching your search query.')
 
 @section('content')
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<div class="bg-white dark:bg-gray-900">
     <!-- Search Header -->
-    <div class="mb-8">
-        <div class="text-center mb-8">
-            <h1 class="text-3xl font-bold text-gray-900 mb-4">Search Results</h1>
-            
-            <!-- Search Form -->
-            <form action="{{ route('search') }}" method="GET" class="max-w-2xl mx-auto">
-                <div class="flex">
-                    <input type="search" 
-                           name="q" 
-                           value="{{ $query }}"
-                           placeholder="Search news articles..." 
-                           class="flex-1 px-4 py-3 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 text-lg"
-                           autofocus>
-                    <button type="submit" 
-                            class="px-6 py-3 bg-red-600 text-white rounded-r-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
+        <div class="text-center">
+            <h1 class="text-4xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-5xl">
+                Search Results
+            </h1>
+            @if($query)
+            <p class="mt-4 text-lg leading-8 text-gray-600 dark:text-gray-300">
+                Results for: <span class="font-semibold">"{{ $query }}"</span>
+            </p>
+            @endif
+        </div>
+
+        <!-- Search Form -->
+        <div class="mt-8 mx-auto max-w-md">
+            <form action="{{ route('search') }}" method="GET" class="relative">
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd" />
                         </svg>
-                    </button>
+                    </div>
+                    <input 
+                        type="text" 
+                        name="q" 
+                        value="{{ $query ?? '' }}"
+                        placeholder="Search articles..." 
+                        class="block w-full rounded-md border-0 py-2 pl-10 pr-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-white dark:ring-gray-600 dark:placeholder:text-gray-400"
+                    >
                 </div>
             </form>
         </div>
-
-        <!-- Results Info -->
-        <div class="flex items-center justify-between border-b border-gray-200 pb-4">
-            <div>
-                <p class="text-lg text-gray-900">
-                    @if($posts->total() > 0)
-                        Found <span class="font-semibold">{{ number_format($posts->total()) }}</span> result{{ $posts->total() !== 1 ? 's' : '' }} for 
-                        <span class="text-red-600 font-semibold">"{{ $query }}"</span>
-                    @else
-                        No results found for <span class="text-red-600 font-semibold">"{{ $query }}"</span>
-                    @endif
-                </p>
-                @if($posts->hasPages())
-                <p class="text-sm text-gray-500 mt-1">
-                    Showing {{ $posts->firstItem() }}-{{ $posts->lastItem() }} of {{ $posts->total() }} results
-                </p>
-                @endif
-            </div>
-            
-            @if($posts->total() > 0)
-            <div class="flex items-center space-x-2 text-sm text-gray-500">
-                <span>Sort by:</span>
-                <select onchange="sortResults(this.value)" class="border border-gray-300 rounded px-2 py-1 text-sm">
-                    <option value="relevance">Relevance</option>
-                    <option value="date">Date</option>
-                    <option value="views">Most Viewed</option>
-                </select>
-            </div>
-            @endif
-        </div>
     </div>
 
-    @if($posts->isNotEmpty())
-        <!-- Search Results -->
-        <div class="space-y-6 mb-12">
-            @foreach($posts as $article)
-            <article class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
-                <div class="md:flex">
-                    <div class="md:flex-shrink-0">
-                        @if($article->featured_image)
-                            <img src="{{ $article->featured_image }}" 
-                                 alt="{{ $article->title }}"
-                                 class="h-48 w-full object-cover md:h-full md:w-48">
-                        @else
-                            <div class="h-48 w-full md:h-full md:w-48 bg-gray-200 flex items-center justify-center">
-                                <svg class="w-12 h-12 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
-                                </svg>
-                            </div>
-                        @endif
-                    </div>
-                    <div class="p-6 flex-1">
-                        <div class="flex items-center mb-3">
-                            @foreach($article->tags->take(3) as $tag)
-                                <a href="{{ route('tags.show', $tag->slug) }}" 
-                                   class="bg-gray-100 text-gray-700 hover:bg-red-100 hover:text-red-700 px-2 py-1 rounded text-xs font-medium mr-2 transition-colors">
-                                    {{ $tag->name }}
-                                </a>
-                            @endforeach
-                            @foreach($article->categories->take(1) as $category)
-                                <a href="{{ route('categories.show', $category->slug) }}" 
-                                   class="bg-blue-100 text-blue-700 hover:bg-blue-200 px-2 py-1 rounded text-xs font-medium mr-2 transition-colors">
-                                    {{ $category->title }}
-                                </a>
-                            @endforeach
-                        </div>
-                        
-                        <h2 class="text-xl font-semibold text-gray-900 mb-3">
-                            <a href="{{ route('news.show', $article->slug) }}" class="hover:text-red-600">
-                                {!! preg_replace('/(' . preg_quote($query, '/') . ')/i', '<mark class="bg-yellow-200 px-1 rounded">$1</mark>', $article->title) !!}
-                            </a>
-                        </h2>
-                        
-                        <p class="text-gray-600 mb-4">
-                            {!! preg_replace('/(' . preg_quote($query, '/') . ')/i', '<mark class="bg-yellow-200 px-1 rounded">$1</mark>', \Str::limit($article->excerpt, 150)) !!}
-                        </p>
-                        
-                        <div class="flex items-center justify-between text-sm text-gray-500">
-                            <div class="flex items-center space-x-4">
-                                <time datetime="{{ $article->created_at->toISOString() }}">
-                                    {{ $article->created_at->format('M j, Y') }}
-                                </time>
-                                <span>{{ $article->view_count }} views</span>
-                                <span>{{ $article->reading_time }} min read</span>
-                            </div>
-                            <a href="{{ route('news.show', $article->slug) }}" 
-                               class="text-red-600 hover:text-red-700 font-medium">
-                                Read Article →
-                            </a>
+    <!-- Search Results -->
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
+        @if($articles && $articles->count() > 0)
+        <div class="flex items-center justify-between mb-8">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
+                Search Results
+            </h2>
+            <div class="text-sm text-gray-600 dark:text-gray-400">
+                {{ $articles->total() }} {{ Str::plural('result', $articles->total()) }} found
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 gap-8 lg:grid-cols-2 xl:grid-cols-3">
+            @foreach($articles as $article)
+            <article class="group relative flex flex-col overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm hover:shadow-lg transition-shadow duration-200">
+                <div class="aspect-[16/9] overflow-hidden">
+                    <img 
+                        src="{{ $article->image ? asset('storage/' . $article->image) : 'https://picsum.photos/800/600?random=' . $article->id }}" 
+                        alt="{{ $article->title }}"
+                        class="h-full w-full object-cover group-hover:scale-105 transition-transform duration-200"
+                        loading="lazy"
+                    >
+                </div>
+                
+                <div class="flex-1 p-6">
+                    <div class="flex items-center gap-x-4 text-xs mb-3">
+                        <time datetime="{{ $article->published_at->format('Y-m-d') }}" class="text-gray-500 dark:text-gray-400">
+                            {{ $article->published_at->format('M j, Y') }}
+                        </time>
+                        <div class="flex items-center">
+                            <svg class="h-4 w-4 mr-1 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
+                            </svg>
+                            <span class="text-gray-500 dark:text-gray-400">{{ number_format($article->view_count) }}</span>
                         </div>
                     </div>
+                    
+                    <h3 class="text-lg font-semibold leading-6 text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 mb-3">
+                        <a href="{{ route('news.show', $article->slug) }}">
+                            <span class="absolute inset-0"></span>
+                            {{ $article->title }}
+                        </a>
+                    </h3>
+                    
+                    @if($article->excerpt)
+                    <p class="text-sm leading-6 text-gray-600 dark:text-gray-300 mb-4">
+                        {{ Str::limit($article->excerpt, 120) }}
+                    </p>
+                    @endif
+                    
+                    <!-- Tags -->
+                    @if($article->tags->count() > 0)
+                    <div class="flex flex-wrap gap-2">
+                        @foreach($article->tags->take(3) as $tag)
+                        <a href="{{ route('tags.show', $tag->slug) }}" 
+                           class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium transition-all duration-200 hover:scale-105"
+                           style="background-color: {{ $tag->color }}20; color: {{ $tag->color }}; border: 1px solid {{ $tag->color }}40;">
+                            {{ $tag->name }}
+                        </a>
+                        @endforeach
+                    </div>
+                    @endif
                 </div>
             </article>
             @endforeach
         </div>
 
         <!-- Pagination -->
-        @if($posts->hasPages())
-        <div class="flex justify-center">
-            {{ $posts->appends(['q' => $query])->links() }}
+        <div class="mt-12">
+            {{ $articles->appends(['q' => $query])->links() }}
+        </div>
+        @else
+        <div class="text-center py-12">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">No articles found</h3>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                @if($query)
+                    Try adjusting your search terms or browse our latest articles.
+                @else
+                    Enter a search term to find articles.
+                @endif
+            </p>
+            <div class="mt-6">
+                <a href="{{ route('home') }}" class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+                    Browse latest articles
+                </a>
+            </div>
         </div>
         @endif
+    </div>
 
-    @else
-        <!-- No Results -->
-        <div class="text-center py-12">
-            <svg class="mx-auto h-16 w-16 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-            </svg>
-            <h3 class="text-xl font-medium text-gray-900 mb-2">No articles found</h3>
-            <p class="text-gray-500 mb-6 max-w-md mx-auto">
-                We couldn't find any articles matching your search. Try different keywords or browse our topics.
-            </p>
+    <!-- Popular Tags -->
+    @if(isset($popularTags) && $popularTags->count() > 0)
+    <div class="bg-gray-50 dark:bg-gray-800 py-16">
+        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl">
+                    Popular Topics
+                </h2>
+                <p class="mt-2 text-lg leading-8 text-gray-600 dark:text-gray-300">
+                    Discover trending topics
+                </p>
+            </div>
             
-            <!-- Search Suggestions -->
-            <div class="bg-gray-50 rounded-lg p-6 max-w-2xl mx-auto mb-8">
-                <h4 class="text-lg font-medium text-gray-900 mb-4">Search Suggestions</h4>
-                <ul class="text-sm text-gray-600 space-y-2">
-                    <li>• Try using different or more general keywords</li>
-                    <li>• Check your spelling</li>
-                    <li>• Use fewer keywords</li>
-                    <li>• Try searching for related topics</li>
-                </ul>
+            <div class="flex flex-wrap justify-center gap-4">
+                @foreach($popularTags as $tag)
+                <a href="{{ route('tags.show', $tag->slug) }}" 
+                   class="inline-flex items-center rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                   style="background-color: {{ $tag->color }}20; color: {{ $tag->color }}; border: 1px solid {{ $tag->color }}40;">
+                    {{ $tag->name }}
+                    <span class="ml-2 inline-flex items-center rounded-full bg-white/20 px-2 py-0.5 text-xs font-medium">
+                        {{ $tag->usage_count }}
+                    </span>
+                </a>
+                @endforeach
             </div>
-
-            <!-- Popular Topics -->
-            @php
-                $popularTags = \App\Models\Tag::withCount(['posts' => function ($query) {
-                    $query->where('status', 'published');
-                }])
-                ->orderBy('posts_count', 'desc')
-                ->take(12)
-                ->get();
-            @endphp
-
-            @if($popularTags->isNotEmpty())
-            <div class="max-w-2xl mx-auto">
-                <h4 class="text-lg font-medium text-gray-900 mb-4">Or browse popular topics:</h4>
-                <div class="flex flex-wrap gap-2 justify-center">
-                    @foreach($popularTags as $tag)
-                        <a href="{{ route('tags.show', $tag->slug) }}" 
-                           class="bg-white border border-gray-300 hover:border-red-300 hover:bg-red-50 text-gray-700 hover:text-red-700 px-4 py-2 rounded-full text-sm font-medium transition-colors">
-                            {{ $tag->name }}
-                            <span class="text-xs text-gray-500 ml-1">({{ $tag->posts_count }})</span>
-                        </a>
-                    @endforeach
-                </div>
-            </div>
-            @endif
         </div>
+    </div>
     @endif
 </div>
-
-<script>
-function sortResults(sortBy) {
-    const url = new URL(window.location);
-    url.searchParams.set('sort', sortBy);
-    window.location.href = url.toString();
-}
-</script>
 @endsection 

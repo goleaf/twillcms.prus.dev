@@ -4,216 +4,201 @@
 @section('description', 'Read the latest news articles about ' . $tag->name . '. Stay updated with stories and developments in this topic.')
 
 @section('content')
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<div class="bg-white dark:bg-gray-900">
     <!-- Tag Header -->
-    <div class="text-center mb-12">
-        <div class="inline-flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mb-4">
-            <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
-            </svg>
+    <div class="relative overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-br opacity-20"
+             style="background: linear-gradient(135deg, {{ $tag->color }}40, {{ $tag->color }}80);">
         </div>
-        <h1 class="text-4xl font-bold text-gray-900 mb-4">#{{ $tag->name }}</h1>
-        <p class="text-xl text-gray-600 max-w-3xl mx-auto mb-6">
-            {{ $posts->total() }} articles about {{ $tag->name }}
-        </p>
-        
-        <!-- Breadcrumb -->
-        <nav class="flex justify-center">
-            <ol class="flex items-center space-x-2 text-sm text-gray-500">
-                <li><a href="{{ route('home') }}" class="hover:text-red-600">Home</a></li>
-                <li><span class="mx-2">/</span></li>
-                <li><a href="{{ route('tags.index') }}" class="hover:text-red-600">Topics</a></li>
-                <li><span class="mx-2">/</span></li>
-                <li class="text-gray-900 font-medium">{{ $tag->name }}</li>
-            </ol>
-        </nav>
-    </div>
-
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <!-- Articles -->
-        <div class="lg:col-span-2">
-            @if($posts->isNotEmpty())
-                <div class="space-y-6">
-                    @foreach($posts as $article)
-                    <article class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
-                        <div class="md:flex">
-                            <div class="md:flex-shrink-0">
-                                @if($article->featured_image)
-                                    <img src="{{ $article->featured_image }}" 
-                                         alt="{{ $article->title }}"
-                                         class="h-48 w-full object-cover md:h-full md:w-48">
-                                @else
-                                    <div class="h-48 w-full md:h-full md:w-48 bg-gray-200 flex items-center justify-center">
-                                        <svg class="w-12 h-12 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
-                                        </svg>
-                                    </div>
-                                @endif
-                            </div>
-                            <div class="p-6 flex-1">
-                                <div class="flex items-center mb-3">
-                                    <span class="bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-semibold mr-3">
-                                        {{ $tag->name }}
-                                    </span>
-                                    @foreach($article->tags->where('id', '!=', $tag->id)->take(2) as $otherTag)
-                                        <a href="{{ route('tags.show', $otherTag->slug) }}" 
-                                           class="bg-gray-100 text-gray-700 hover:bg-gray-200 px-2 py-1 rounded text-xs font-medium mr-2">
-                                            {{ $otherTag->name }}
-                                        </a>
-                                    @endforeach
-                                </div>
-                                
-                                <h2 class="text-xl font-semibold text-gray-900 mb-3">
-                                    <a href="{{ route('news.show', $article->slug) }}" class="hover:text-red-600">
-                                        {{ $article->title }}
-                                    </a>
-                                </h2>
-                                
-                                <p class="text-gray-600 mb-4">
-                                    {{ \Str::limit($article->excerpt, 150) }}
-                                </p>
-                                
-                                <div class="flex items-center justify-between text-sm text-gray-500">
-                                    <div class="flex items-center space-x-4">
-                                        <time datetime="{{ $article->created_at->toISOString() }}">
-                                            {{ $article->created_at->diffForHumans() }}
-                                        </time>
-                                        <span>{{ $article->view_count }} views</span>
-                                        <span>{{ $article->reading_time }} min read</span>
-                                    </div>
-                                    <a href="{{ route('news.show', $article->slug) }}" 
-                                       class="text-red-600 hover:text-red-700 font-medium">
-                                        Read More →
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </article>
-                    @endforeach
+        <div class="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
+            <div class="text-center">
+                <div class="flex items-center justify-center mb-4">
+                    <div class="w-6 h-6 rounded-full mr-4" style="background-color: {{ $tag->color }}"></div>
+                    <h1 class="text-4xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-5xl">
+                        {{ $tag->name }}
+                    </h1>
+                    @if($tag->is_featured)
+                    <span class="ml-4 inline-flex items-center rounded-full bg-yellow-100 px-3 py-1 text-sm font-medium text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                        Featured
+                    </span>
+                    @endif
                 </div>
-
-                <!-- Pagination -->
-                @if($posts->hasPages())
-                <div class="mt-12">
-                    {{ $posts->links() }}
-                </div>
+                
+                @if($tag->description)
+                <p class="mt-4 text-lg leading-8 text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
+                    {{ $tag->description }}
+                </p>
                 @endif
-            @else
-                <!-- Empty State -->
-                <div class="text-center py-12">
-                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
-                    </svg>
-                    <h3 class="mt-2 text-sm font-medium text-gray-900">No articles found</h3>
-                    <p class="mt-1 text-sm text-gray-500">There are no articles tagged with "{{ $tag->name }}" yet.</p>
-                    <div class="mt-6">
-                        <a href="{{ route('tags.index') }}" 
-                           class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700">
-                            Browse All Topics
-                        </a>
+                
+                <div class="mt-6 flex items-center justify-center space-x-6 text-sm text-gray-500 dark:text-gray-400">
+                    <div class="flex items-center">
+                        <svg class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M2 5a2 2 0 012-2h8a2 2 0 012 2v10a2 2 0 002 2H4a2 2 0 01-2-2V5zm3 1h6v4H5V6zm6 6H5v2h6v-2z" clip-rule="evenodd" />
+                        </svg>
+                        <span>{{ $tag->usage_count }} {{ Str::plural('article', $tag->usage_count) }}</span>
+                    </div>
+                    <div class="flex items-center">
+                        <svg class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd" />
+                        </svg>
+                        <span>Last updated {{ $tag->updated_at->diffForHumans() }}</span>
                     </div>
                 </div>
-            @endif
-        </div>
-
-        <!-- Sidebar -->
-        <div class="lg:col-span-1">
-            <!-- Related Tags -->
-            @if($relatedTags->isNotEmpty())
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4">Related Topics</h3>
-                <div class="space-y-2">
-                    @foreach($relatedTags as $relatedTag)
-                        <a href="{{ route('tags.show', $relatedTag->slug) }}" 
-                           class="flex items-center justify-between text-gray-700 hover:text-red-600 py-2 px-3 rounded hover:bg-gray-50 transition-colors">
-                            <span class="flex items-center">
-                                <svg class="w-4 h-4 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
-                                </svg>
-                                {{ $relatedTag->name }}
-                            </span>
-                            <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                                {{ $relatedTag->posts_count }}
-                            </span>
-                        </a>
-                    @endforeach
-                </div>
-            </div>
-            @endif
-
-            <!-- Popular Topics -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4">Popular Topics</h3>
-                <div class="flex flex-wrap gap-2">
-                    @php
-                        $popularTags = \App\Models\Tag::withCount(['posts' => function ($query) {
-                            $query->where('status', 'published');
-                        }])
-                        ->orderBy('posts_count', 'desc')
-                        ->take(15)
-                        ->get();
-                    @endphp
-                    @foreach($popularTags as $popularTag)
-                        <a href="{{ route('tags.show', $popularTag->slug) }}" 
-                           class="bg-gray-100 hover:bg-red-100 hover:text-red-700 text-gray-700 px-3 py-1 rounded-full text-sm font-medium transition-colors {{ $popularTag->id === $tag->id ? 'bg-red-100 text-red-700' : '' }}">
-                            {{ $popularTag->name }}
-                        </a>
-                    @endforeach
-                </div>
-                <div class="mt-4">
-                    <a href="{{ route('tags.index') }}" class="text-red-600 hover:text-red-700 text-sm font-medium">
-                        View All Topics →
-                    </a>
-                </div>
-            </div>
-
-            <!-- Quick Actions -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-                <div class="space-y-3">
-                    <a href="{{ route('search', ['q' => $tag->name]) }}" 
-                       class="flex items-center text-gray-700 hover:text-red-600 py-2">
-                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                        </svg>
-                        Search "{{ $tag->name }}"
-                    </a>
-                    
-                    <button onclick="shareTag()" 
-                            class="flex items-center text-gray-700 hover:text-blue-600 py-2 w-full text-left">
-                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"/>
-                        </svg>
-                        Share Topic
-                    </button>
-                    
-                    <a href="{{ route('home') }}" 
-                       class="flex items-center text-gray-700 hover:text-green-600 py-2">
-                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-                        </svg>
-                        Back to Home
-                    </a>
-                </div>
             </div>
         </div>
     </div>
-</div>
 
-<script>
-function shareTag() {
-    if (navigator.share) {
-        navigator.share({
-            title: 'News about {{ $tag->name }}',
-            text: 'Check out the latest news articles about {{ $tag->name }}',
-            url: window.location.href,
-        });
-    } else {
-        // Fallback: copy to clipboard
-        navigator.clipboard.writeText(window.location.href).then(function() {
-            alert('Link copied to clipboard!');
-        });
-    }
-}
-</script>
+    <!-- Articles -->
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
+        <div class="flex items-center justify-between mb-8">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
+                Latest Articles
+            </h2>
+            <div class="text-sm text-gray-600 dark:text-gray-400">
+                {{ $articles->total() }} {{ Str::plural('article', $articles->total()) }} found
+            </div>
+        </div>
+
+        @if($articles->count() > 0)
+        <div class="grid grid-cols-1 gap-8 lg:grid-cols-2 xl:grid-cols-3">
+            @foreach($articles as $article)
+            <article class="group relative flex flex-col overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm hover:shadow-lg transition-shadow duration-200">
+                <div class="aspect-[16/9] overflow-hidden">
+                    <img 
+                        src="{{ $article->image ? asset('storage/' . $article->image) : 'https://picsum.photos/800/600?random=' . $article->id }}" 
+                        alt="{{ $article->title }}"
+                        class="h-full w-full object-cover group-hover:scale-105 transition-transform duration-200"
+                        loading="lazy"
+                    >
+                </div>
+                
+                <div class="flex-1 p-6">
+                    <div class="flex items-center gap-x-4 text-xs mb-3">
+                        <time datetime="{{ $article->published_at->format('Y-m-d') }}" class="text-gray-500 dark:text-gray-400">
+                            {{ $article->published_at->format('M j, Y') }}
+                        </time>
+                        <div class="flex items-center">
+                            <svg class="h-4 w-4 mr-1 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
+                            </svg>
+                            <span class="text-gray-500 dark:text-gray-400">{{ number_format($article->view_count) }}</span>
+                        </div>
+                    </div>
+                    
+                    <h3 class="text-lg font-semibold leading-6 text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 mb-3">
+                        <a href="{{ route('news.show', $article->slug) }}">
+                            <span class="absolute inset-0"></span>
+                            {{ $article->title }}
+                        </a>
+                    </h3>
+                    
+                    @if($article->excerpt)
+                    <p class="text-sm leading-6 text-gray-600 dark:text-gray-300 mb-4">
+                        {{ Str::limit($article->excerpt, 120) }}
+                    </p>
+                    @endif
+                    
+                    <!-- Other Tags -->
+                    @if($article->tags->count() > 1)
+                    <div class="flex flex-wrap gap-2">
+                        @foreach($article->tags->where('id', '!=', $tag->id)->take(3) as $otherTag)
+                        <a href="{{ route('tags.show', $otherTag->slug) }}" 
+                           class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium transition-all duration-200 hover:scale-105"
+                           style="background-color: {{ $otherTag->color }}20; color: {{ $otherTag->color }}; border: 1px solid {{ $otherTag->color }}40;">
+                            {{ $otherTag->name }}
+                        </a>
+                        @endforeach
+                    </div>
+                    @endif
+                </div>
+            </article>
+            @endforeach
+        </div>
+
+        <!-- Pagination -->
+        <div class="mt-12">
+            {{ $articles->links() }}
+        </div>
+        @else
+        <div class="text-center py-12">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">No articles found</h3>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                There are no articles tagged with "{{ $tag->name }}" yet.
+            </p>
+            <div class="mt-6">
+                <a href="{{ route('home') }}" class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+                    Browse all articles
+                </a>
+            </div>
+        </div>
+        @endif
+    </div>
+
+    <!-- Related Tags -->
+    @if($relatedTags->count() > 0)
+    <div class="bg-gray-50 dark:bg-gray-800 py-16">
+        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl">
+                    Related Topics
+                </h2>
+                <p class="mt-2 text-lg leading-8 text-gray-600 dark:text-gray-300">
+                    Explore similar topics that might interest you
+                </p>
+            </div>
+            
+            <div class="flex flex-wrap justify-center gap-4">
+                @foreach($relatedTags as $relatedTag)
+                <a href="{{ route('tags.show', $relatedTag->slug) }}" 
+                   class="inline-flex items-center rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                   style="background-color: {{ $relatedTag->color }}20; color: {{ $relatedTag->color }}; border: 1px solid {{ $relatedTag->color }}40;">
+                    {{ $relatedTag->name }}
+                    <span class="ml-2 inline-flex items-center rounded-full bg-white/20 px-2 py-0.5 text-xs font-medium">
+                        {{ $relatedTag->usage_count }}
+                    </span>
+                </a>
+                @endforeach
+            </div>
+        </div>
+    </div>
+    @endif
+
+    <!-- Popular Tags -->
+    @if($popularTags->count() > 0)
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
+        <div class="text-center mb-12">
+            <h2 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
+                Popular Topics
+            </h2>
+            <p class="mt-2 text-lg leading-8 text-gray-600 dark:text-gray-300">
+                Discover what's trending now
+            </p>
+        </div>
+        
+        <div class="flex flex-wrap justify-center gap-3">
+            @foreach($popularTags as $popularTag)
+            <a href="{{ route('tags.show', $popularTag->slug) }}" 
+               class="inline-flex items-center rounded-full px-3 py-1.5 text-sm font-medium transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 {{ $popularTag->id === $tag->id ? 'opacity-50 cursor-not-allowed' : '' }}"
+               style="background-color: {{ $popularTag->color }}20; color: {{ $popularTag->color }}; border: 1px solid {{ $popularTag->color }}40;"
+               {{ $popularTag->id === $tag->id ? 'onclick="return false;"' : '' }}>
+                {{ $popularTag->name }}
+                <span class="ml-2 inline-flex items-center rounded-full bg-white/20 px-1.5 py-0.5 text-xs font-medium">
+                    {{ $popularTag->usage_count }}
+                </span>
+            </a>
+            @endforeach
+        </div>
+        
+        <div class="mt-8 text-center">
+            <a href="{{ route('tags.index') }}" class="text-sm font-semibold leading-6 text-indigo-600 hover:text-indigo-500">
+                View all topics <span aria-hidden="true">→</span>
+            </a>
+        </div>
+    </div>
+    @endif
+</div>
 @endsection 

@@ -4,50 +4,34 @@ namespace App\Http\Controllers;
 
 use App\Models\Article;
 use App\Models\Tag;
+use App\Repositories\ArticleRepository;
+use App\Repositories\TagRepository;
 use Illuminate\Http\Request;
 
 class HomeController extends Controller
 {
+    protected ArticleRepository $articleRepository;
+    protected TagRepository $tagRepository;
+
+    public function __construct(ArticleRepository $articleRepository, TagRepository $tagRepository)
+    {
+        $this->articleRepository = $articleRepository;
+        $this->tagRepository = $tagRepository;
+    }
+
     public function index(Request $request)
     {
-        $query = Article::with('tags')
-            ->published()
-            ->latest('published_at');
+        $filters = [
+            'tag' => $request->query('tag'),
+            'search' => $request->query('search'),
+            'featured' => $request->query('featured'),
+        ];
 
-        // Filter by tag if provided
-        if ($tag = $request->query('tag')) {
-            $query->whereHas('tags', function ($q) use ($tag) {
-                $q->where('slug', $tag);
-            });
-        }
+        $articles = $this->articleRepository->getAllPaginated(12, $filters);
+        $featuredArticles = $this->articleRepository->getFeatured(5);
+        $tags = $this->tagRepository->getWithArticleCounts();
 
-        // Search functionality
-        if ($search = $request->query('search')) {
-            $query->where(function ($q) use ($search) {
-                $q->where('title', 'like', "%{$search}%")
-                    ->orWhere('content', 'like', "%{$search}%")
-                    ->orWhere('excerpt', 'like', "%{$search}%");
-            });
-        }
-
-        $articles = $query->paginate(12)->withQueryString();
-        
-        // Get featured articles for the hero section
-        $featuredArticles = Article::with('tags')
-            ->featured()
-            ->published()
-            ->latest('published_at')
-            ->take(5)
-            ->get();
-
-        // Get all tags with their article count
-        $tags = Tag::withCount(['articles' => function ($query) {
-            $query->published();
-        }])->having('articles_count', '>', 0)
-          ->orderBy('articles_count', 'desc')
-          ->get();
-
-        return view('news.index', compact('articles', 'featuredArticles', 'tags'));
+        return view('news.home', compact('articles', 'featuredArticles', 'tags'));
     }
 
     public function show(Article $article)
@@ -55,32 +39,31 @@ class HomeController extends Controller
         abort_unless($article->is_published, 404);
 
         $article->load('tags');
-        $article->incrementViewCount();
+        $this->articleRepository->incrementViews($article);
 
-        // Get related articles based on tags
-        $relatedArticles = Article::with('tags')
-            ->published()
-            ->whereHas('tags', function ($query) use ($article) {
-                $query->whereIn('tags.id', $article->tags->pluck('id'));
-            })
-            ->where('id', '!=', $article->id)
-            ->latest('published_at')
-            ->take(6)
-            ->get();
+        $relatedArticles = $this->articleRepository->getRelated($article, 6);
 
         return view('news.show', compact('article', 'relatedArticles'));
     }
 
     public function tag(Tag $tag)
     {
-        $articles = Article::with('tags')
-            ->published()
-            ->whereHas('tags', function ($query) use ($tag) {
-                $query->where('tags.id', $tag->id);
-            })
-            ->latest('published_at')
-            ->paginate(12);
+        $articles = $this->articleRepository->getByTag($tag, 12);
 
         return view('news.tag', compact('tag', 'articles'));
+    }
+
+    public function search(Request $request)
+    {
+        $query = $request->query('q');
+        
+        if (!$query) {
+            return redirect()->route('home')->with('error', 'Please enter a search term.');
+        }
+
+        $articles = $this->articleRepository->search($query, 12);
+        $tags = $this->tagRepository->getPopular(10);
+
+        return view('news.search', compact('articles', 'query', 'tags'));
     }
 }

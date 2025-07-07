@@ -14,7 +14,10 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeImageLazyLoading();
     initializeInfiniteScroll();
     initializeThemeToggle();
-        });
+    initializeSmoothScroll();
+    initializeLoadingStates();
+    initializeModals();
+});
 
 // Enhanced search functionality with autocomplete
 function initializeSearch() {
@@ -42,7 +45,7 @@ function initializeSearch() {
             }
         }, 300));
     });
-    }
+}
 
 // Enhanced mobile menu with smooth animations
 function initializeMobileMenu() {
@@ -67,7 +70,7 @@ function initializeMobileMenu() {
             }
         });
     }
-    }
+}
 
 // Enhanced scroll to top with progress indicator
 function initializeScrollToTop() {
@@ -126,7 +129,7 @@ function initializeTagSearch() {
             });
         });
     }
-    }
+}
 
 // Reading progress indicator for articles
 function initializeReadingProgress() {
@@ -147,7 +150,7 @@ function initializeReadingProgress() {
             progressBar.style.width = progress + '%';
         }, 10));
     }
-    }
+}
 
 // Social sharing functionality
 function initializeSocialSharing() {
@@ -280,6 +283,51 @@ function initializeThemeToggle() {
     }
 }
 
+// Smooth scroll animation for internal links
+function initializeSmoothScroll() {
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function(e) {
+            e.preventDefault();
+            const targetId = this.getAttribute('href');
+            if (targetId === '#') return;
+            
+            const targetElement = document.querySelector(targetId);
+            if (targetElement) {
+                const headerOffset = 80; // Account for fixed header
+                const elementPosition = targetElement.getBoundingClientRect().top;
+                const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+                window.scrollTo({
+                    top: offsetPosition,
+                    behavior: 'smooth'
+                });
+            }
+        });
+    });
+}
+
+// Loading state manager with skeleton screens
+function initializeLoadingStates() {
+    const articlesGrid = document.querySelector('#articles-grid');
+    const skeletonTemplate = document.querySelector('#skeleton-loader');
+    
+    if (articlesGrid && skeletonTemplate) {
+        // Show loading state
+        window.showLoading = function(count = 6) {
+            articlesGrid.innerHTML = '';
+            for (let i = 0; i < count; i++) {
+                const clone = document.importNode(skeletonTemplate.content, true);
+                articlesGrid.appendChild(clone);
+            }
+        };
+        
+        // Hide loading state and show content
+        window.hideLoading = function(content) {
+            articlesGrid.innerHTML = content;
+        };
+    }
+}
+
 // Utility functions
 function debounce(func, wait) {
     let timeout;
@@ -338,4 +386,33 @@ function showNotification(message, type = 'info') {
             }
         }, 300);
     }, 3000);
+}
+
+// Modal management
+function initializeModals() {
+    // Open modal
+    window.openModal = function(modalId) {
+        window.dispatchEvent(new CustomEvent('open-modal', {
+            detail: modalId
+        }));
+    };
+
+    // Close modal
+    window.closeModal = function(modalId) {
+        window.dispatchEvent(new CustomEvent('close-modal', {
+            detail: modalId
+        }));
+    };
+
+    // Close all modals
+    window.closeAllModals = function() {
+        window.dispatchEvent(new CustomEvent('close-modal'));
+    };
+
+    // Handle ESC key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            window.closeAllModals();
+        }
+    });
 }

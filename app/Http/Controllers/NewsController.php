@@ -2,13 +2,23 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Post;
+use App\Models\Article;
 use App\Models\Tag;
-use App\Models\Category;
+use App\Repositories\ArticleRepository;
+use App\Repositories\TagRepository;
 use Illuminate\Http\Request;
 
 class NewsController extends Controller
 {
+    protected $articleRepository;
+    protected $tagRepository;
+
+    public function __construct(ArticleRepository $articleRepository, TagRepository $tagRepository)
+    {
+        $this->articleRepository = $articleRepository;
+        $this->tagRepository = $tagRepository;
+    }
+
     /**
      * Display the main news feed
      */
@@ -54,6 +64,23 @@ class NewsController extends Controller
     }
 
     /**
+     * Display a specific article
+     */
+    public function show(Article $article)
+    {
+        // Increment view count
+        $this->articleRepository->incrementViews($article);
+
+        // Get related articles
+        $relatedArticles = $this->articleRepository->getRelated($article, 4);
+
+        // Get article tags
+        $tags = $article->tags;
+
+        return view('news.show', compact('article', 'relatedArticles', 'tags'));
+    }
+
+    /**
      * Search functionality
      */
     public function search(Request $request)
@@ -61,25 +88,16 @@ class NewsController extends Controller
         $query = $request->get('q');
         
         if (empty($query)) {
-            return redirect()->route('home');
+            return view('news.search', [
+                'articles' => collect(),
+                'query' => '',
+                'totalResults' => 0
+            ]);
         }
 
-        $posts = Post::published()
-            ->where(function ($queryBuilder) use ($query) {
-                $queryBuilder->where('title', 'LIKE', "%{$query}%")
-                    ->orWhere('content', 'LIKE', "%{$query}%")
-                    ->orWhere('excerpt', 'LIKE', "%{$query}%");
-            })
-            ->orWhereHas('tags', function ($queryBuilder) use ($query) {
-                $queryBuilder->where('name', 'LIKE', "%{$query}%");
-            })
-            ->orWhereHas('categories', function ($queryBuilder) use ($query) {
-                $queryBuilder->where('title', 'LIKE', "%{$query}%");
-            })
-            ->with(['tags', 'categories'])
-            ->latest()
-            ->paginate(12);
+        $articles = $this->articleRepository->search($query);
+        $totalResults = $articles->total();
 
-        return view('news.search', compact('posts', 'query'));
+        return view('news.search', compact('articles', 'query', 'totalResults'));
     }
 } 
