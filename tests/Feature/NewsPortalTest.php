@@ -312,7 +312,7 @@ class NewsPortalTest extends TestCase
     }
 
     /** @test */
-    public function 404_for_nonexistent_article()
+    public function returns_404_for_nonexistent_article()
     {
         $response = $this->get('/news/nonexistent-article');
 
@@ -320,7 +320,7 @@ class NewsPortalTest extends TestCase
     }
 
     /** @test */
-    public function 404_for_nonexistent_tag()
+    public function returns_404_for_nonexistent_tag()
     {
         $response = $this->get('/tags/nonexistent-tag');
 
@@ -328,7 +328,7 @@ class NewsPortalTest extends TestCase
     }
 
     /** @test */
-    public function 404_for_nonexistent_category()
+    public function returns_404_for_nonexistent_category()
     {
         $response = $this->get('/categories/nonexistent-category');
 

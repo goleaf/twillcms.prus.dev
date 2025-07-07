@@ -28,13 +28,6 @@ class Kernel extends HttpKernel
             // ... web middleware ...
             \App\Http\Middleware\SetLocale::class,
         ],
-
-        'api' => [
-            // ... api middleware ...
-            \Illuminate\Http\Middleware\HandleCors::class,
-            'throttle:api',
-            \Illuminate\Routing\Middleware\SubstituteBindings::class,
-        ],
     ];
 
     /**
