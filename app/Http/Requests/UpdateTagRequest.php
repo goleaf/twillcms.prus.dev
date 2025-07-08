@@ -52,12 +52,12 @@ class UpdateTagRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'name.required' => 'The tag name is required.',
-            'name.max' => 'The tag name may not be greater than 100 characters.',
-            'name.unique' => 'This tag name is already taken.',
-            'slug.unique' => 'This slug is already taken.',
-            'color.regex' => 'The color must be a valid hex color code (e.g., #FF0000).',
-            'description.max' => 'The description may not be greater than 500 characters.',
+            'name.required' => __('validation.tag_name_required'),
+            'name.max' => __('validation.tag_name_max'),
+            'name.unique' => __('validation.tag_name_unique'),
+            'slug.unique' => __('validation.tag_slug_unique'),
+            'color.regex' => __('validation.tag_color_regex'),
+            'description.max' => __('validation.tag_description_max'),
         ];
     }
 

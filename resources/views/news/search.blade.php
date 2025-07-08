@@ -47,7 +47,7 @@
                 Search Results
             </h2>
             <div class="text-sm text-gray-600 dark:text-gray-400">
-                {{ $articles->total() }} {{ Str::plural('result', $articles->total()) }} found
+                {{ pagination_count($articles, 'result') }}
             </div>
         </div>
 

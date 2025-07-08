@@ -3,20 +3,21 @@
 @section('title', 'Terms of Service')
 
 @section('content')
-<div class="min-h-screen bg-white dark:bg-gray-900">
+<a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 bg-indigo-700 text-white px-4 py-2 rounded z-50">{{ __('Skip to main content') }}</a>
+<main id="main-content" tabindex="-1" class="min-h-screen bg-white dark:bg-gray-900">
     <!-- Header -->
     <div class="bg-gray-50 dark:bg-gray-800 py-12">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">Terms of Service</h1>
+            <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">{{ __('Terms of Service') }}</h1>
             <p class="text-lg text-gray-600 dark:text-gray-300">
-                Last updated: {{ date('F j, Y') }}
+                {{ __('Last updated: :date', ['date' => date('F j, Y')]) }}
             </p>
         </div>
     </div>
 
     <!-- Content -->
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div class="prose prose-lg max-w-none dark:prose-invert">
+    <section class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 prose prose-lg max-w-none dark:prose-invert prose-indigo">
+        <div>
             <h2>Agreement to Terms</h2>
             <p>
                 By accessing and using our news portal, you accept and agree to be bound by the terms and provision of this agreement. If you do not agree to abide by the above, please do not use this service.
@@ -124,6 +125,6 @@
                 </ul>
             </div>
         </div>
-    </div>
-</div>
+    </section>
+</main>
 @endsection 

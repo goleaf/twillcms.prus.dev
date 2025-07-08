@@ -35,7 +35,7 @@ class AdminController extends Controller
 
         $recentArticles = $this->articleRepository->getLatest(5);
         $popularArticles = $this->articleRepository->getPopular(5);
-        $featuredArticles = $this->articleRepository->getFeatured(5);
+        $featuredArticles = $this->articleRepository->getFeatured(6);
 
         return view('admin.dashboard', compact('statistics', 'recentArticles', 'popularArticles', 'featuredArticles'));
     }
@@ -46,9 +46,10 @@ class AdminController extends Controller
         $filters = [
             'search' => $request->query('search'),
             'featured' => $request->query('featured'),
+            'status' => $request->query('status'),
         ];
 
-        $articles = $this->articleRepository->getAllPaginated(20, $filters);
+        $articles = $this->articleRepository->getAllPaginated(12, $filters);
         $tags = $this->tagRepository->getAll();
 
         return view('admin.articles.index', compact('articles', 'tags'));
@@ -60,104 +61,92 @@ class AdminController extends Controller
         return view('admin.articles.create', compact('tags'));
     }
 
-    public function storeArticle(StoreArticleRequest $request)
+    public function storeArticle(Request $request)
     {
-        $data = $request->validated();
-
-        // Handle image upload
+        $data = $request->validate([
+            'title' => 'required|string|max:255',
+            'excerpt' => 'required|string|max:255',
+            'content' => 'required|string',
+            'image' => 'nullable|image',
+            'is_featured' => 'nullable|boolean',
+            'status' => 'required|in:published,draft',
+            'tags' => 'nullable|array',
+            'tags.*' => 'exists:tags,id',
+        ]);
+        $data['is_featured'] = $request->has('is_featured') ? true : false;
         if ($request->hasFile('image')) {
-            $data['image'] = $request->file('image')->store('articles', 'public');
+            $data['image'] = $request->file('image');
         }
-
-        $article = Article::create($data);
-
-        // Attach tags
-        if ($request->has('tags')) {
-            $article->tags()->attach($request->tags);
-            
-            // Update tag usage counts
-            Tag::whereIn('id', $request->tags)->increment('usage_count');
+        if (isset($data['tags'])) {
+            $data['tags'] = array_unique($data['tags']);
         }
-
-        return redirect()->route('admin.articles.index')
-            ->with('success', 'Article created successfully!');
+        if ($data['is_featured']) {
+            $data['status'] = 'published';
+        }
+        $article = $this->articleRepository->create($data);
+        return redirect()->route('admin.articles.index')->with('success', __('Article created successfully.'));
     }
 
-    public function editArticle(Article $article)
+    public function showArticle($id)
     {
-        $tags = $this->tagRepository->getAll();
-        $article->load('tags');
-        
+        $article = $this->articleRepository->getModel()->findOrFail($id);
+        return view('admin.articles.show', compact('article'));
+    }
+
+    public function editArticle($id)
+    {
+        $article = $this->articleRepository->getModel()->findOrFail($id);
+        $tags = $this->tagRepository->getModel()->all();
         return view('admin.articles.edit', compact('article', 'tags'));
     }
 
-    public function updateArticle(UpdateArticleRequest $request, Article $article)
+    public function updateArticle(Request $request, $id)
     {
-        $data = $request->validated();
-
-        // Handle image upload
+        $article = $this->articleRepository->getModel()->findOrFail($id);
+        $data = $request->validate([
+            'title' => 'required|string|max:255',
+            'excerpt' => 'required|string|max:255',
+            'content' => 'required|string',
+            'image' => 'nullable|image',
+            'is_featured' => 'nullable|boolean',
+            'status' => 'required|in:published,draft',
+            'tags' => 'nullable|array',
+            'tags.*' => 'exists:tags,id',
+        ]);
+        $article->is_featured = $request->has('is_featured') ? true : false;
+        if ($article->is_featured) {
+            $article->status = 'published';
+        } else {
+            $article->status = 'draft';
+        }
         if ($request->hasFile('image')) {
-            // Delete old image
-            if ($article->image) {
-                Storage::disk('public')->delete($article->image);
-            }
-            $data['image'] = $request->file('image')->store('articles', 'public');
+            $data['image'] = $request->file('image');
         }
-
         $article->update($data);
-
-        // Sync tags
-        $oldTagIds = $article->tags->pluck('id')->toArray();
-        $newTagIds = $request->tags ?? [];
-
-        $article->tags()->sync($newTagIds);
-
-        // Update tag usage counts
-        $removedTags = array_diff($oldTagIds, $newTagIds);
-        $addedTags = array_diff($newTagIds, $oldTagIds);
-
-        if (!empty($removedTags)) {
-            Tag::whereIn('id', $removedTags)->decrement('usage_count');
+        if (isset($data['tags'])) {
+            $article->tags()->sync($data['tags']);
         }
-        if (!empty($addedTags)) {
-            Tag::whereIn('id', $addedTags)->increment('usage_count');
-        }
-
-        return redirect()->route('admin.articles.index')
-            ->with('success', 'Article updated successfully!');
+        return redirect()->route('admin.articles.index')->with('success', __('Article updated successfully.'));
     }
 
-    public function destroyArticle(Article $article)
+    public function destroyArticle($id)
     {
-        // Delete image
-        if ($article->image) {
-            Storage::disk('public')->delete($article->image);
-        }
-
-        // Update tag usage counts
-        $tagIds = $article->tags->pluck('id')->toArray();
-        if (!empty($tagIds)) {
-            Tag::whereIn('id', $tagIds)->decrement('usage_count');
-        }
-
-        $article->delete();
-
-        return redirect()->route('admin.articles.index')
-            ->with('success', 'Article deleted successfully!');
+        $article = $this->articleRepository->getModel()->findOrFail($id);
+        $this->articleRepository->delete($article);
+        return redirect()->route('admin.articles.index')->with('success', __('Article deleted successfully.'));
     }
 
     // Tags Management
     public function tags(Request $request)
     {
-        $search = $request->query('search');
-        
-        if ($search) {
-            $tags = $this->tagRepository->search($search, 20);
-        } else {
-            $tags = $this->tagRepository->getAllPaginated(20);
-        }
+        $filters = [
+            'search' => $request->query('search'),
+            'featured' => $request->query('featured'),
+        ];
 
-        return view('admin.tags.index', compact('tags', 'search'));
+        $tags = $this->tagRepository->getAllPaginatedWithFilters(20, $filters);
+
+        return view('admin.tags.index', compact('tags'));
     }
 
     public function createTag()
@@ -167,36 +156,40 @@ class AdminController extends Controller
 
     public function storeTag(StoreTagRequest $request)
     {
-        $this->tagRepository->create($request->validated());
-
-        return redirect()->route('admin.tags.index')
-            ->with('success', 'Tag created successfully!');
+        $data = $request->validated();
+        $tag = $this->tagRepository->create($data);
+        $this->tagRepository->updateUsageCount($tag);
+        return redirect()->route('admin.tags.index')->with('success', __('Tag created successfully.'));
     }
 
-    public function editTag(Tag $tag)
+    public function showTag($id)
     {
+        $tag = $this->tagRepository->getModel()->findOrFail($id);
+        return view('admin.tags.show', compact('tag'));
+    }
+
+    public function editTag($id)
+    {
+        $tag = $this->tagRepository->getModel()->findOrFail($id);
         return view('admin.tags.edit', compact('tag'));
     }
 
-    public function updateTag(UpdateTagRequest $request, Tag $tag)
+    public function updateTag(UpdateTagRequest $request, $id)
     {
-        $this->tagRepository->update($tag, $request->validated());
-
-        return redirect()->route('admin.tags.index')
-            ->with('success', 'Tag updated successfully!');
+        $tag = $this->tagRepository->getModel()->findOrFail($id);
+        $data = $request->validated();
+        $tag->is_featured = $request->has('is_featured') ? true : false;
+        $tag->fill($data);
+        $tag->save();
+        $this->tagRepository->updateUsageCount($tag);
+        return redirect()->route('admin.tags.index')->with('success', __('Tag updated successfully.'));
     }
 
-    public function destroyTag(Tag $tag)
+    public function destroyTag($id)
     {
-        if ($tag->articles()->count() > 0) {
-            return redirect()->route('admin.tags.index')
-                ->with('error', 'Cannot delete tag that has articles. Please remove articles first.');
-        }
-
-        $this->tagRepository->delete($tag);
-
-        return redirect()->route('admin.tags.index')
-            ->with('success', 'Tag deleted successfully!');
+        $tag = $this->tagRepository->getModel()->findOrFail($id);
+        $tag->forceDelete();
+        return redirect()->route('admin.tags.index')->with('success', __('Tag deleted successfully.'));
     }
 
     // Statistics
@@ -219,5 +212,51 @@ class AdminController extends Controller
         $popularTags = $this->tagRepository->getPopular(20);
 
         return view('admin.analytics', compact('popularArticles', 'recentArticles', 'featuredArticles', 'popularTags'));
+    }
+
+    // Bulk Actions for Articles
+    public function bulkActionArticles(Request $request)
+    {
+        $action = $request->input('action');
+        $ids = $request->input('articles', []);
+        if (empty($ids) || !$action) {
+            return redirect()->back()->with('error', __('Please select articles and an action.'));
+        }
+        switch ($action) {
+            case 'publish':
+                $this->articleRepository->bulkUpdateStatus($ids, 'published');
+                break;
+            case 'draft':
+                $this->articleRepository->bulkUpdateStatus($ids, 'draft');
+                break;
+            case 'feature':
+                $this->articleRepository->bulkUpdateFeatured($ids, true);
+                break;
+            case 'unfeature':
+                $this->articleRepository->bulkUpdateFeatured($ids, false);
+                break;
+            case 'delete':
+                $this->articleRepository->bulkDelete($ids);
+                break;
+            default:
+                return redirect()->back()->with('error', __('Invalid action.'));
+        }
+        return redirect()->route('admin.articles.index')->with('success', __('Bulk action completed.'));
+    }
+
+    // Bulk Actions for Tags
+    public function bulkActionTags(Request $request)
+    {
+        $action = $request->input('action');
+        $ids = $request->input('tags', []);
+        if ($action === 'delete' && !empty($ids)) {
+            $this->tagRepository->bulkDelete($ids);
+        } elseif ($action === 'feature' && !empty($ids)) {
+            $this->tagRepository->bulkUpdateFeatured($ids, true);
+        } elseif ($action === 'unfeature' && !empty($ids)) {
+            $this->tagRepository->bulkUpdateFeatured($ids, false);
+        }
+        // Always redirect to /admin/tags after processing, regardless of input
+        return redirect('/admin/tags')->with('success', __('Bulk action completed.'));
     }
 } 

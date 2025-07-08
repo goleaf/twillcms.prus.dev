@@ -40,17 +40,17 @@ class RepositoryTest extends TestCase
     {
         // Create test data
         $tag = Tag::factory()->create();
-        Article::factory(3)
-            ->create(['is_published' => true])
-            ->each(function ($article) use ($tag) {
-                $article->tags()->attach($tag);
-            });
-
+        $articles = Article::factory(3)
+            ->create(['is_published' => true]);
+        $articles->each(function ($article) use ($tag) {
+            $article->tags()->attach($tag);
+        });
+        $tag->usage_count = $tag->articles()->count();
+        $tag->save();
         // Get articles by tag
-        $articles = $this->articleRepository->getByTag($tag->slug);
-
+        $articlesResult = $this->articleRepository->getByTag($tag->slug);
         // Assert response
-        $this->assertEquals(3, $articles->total());
+        $this->assertEquals(3, $articlesResult->total());
     }
 
     public function test_article_repository_get_featured(): void
@@ -146,21 +146,19 @@ class RepositoryTest extends TestCase
         // Create test data
         $popularTag = Tag::factory()->create();
         $unpopularTag = Tag::factory()->create();
-
-        Article::factory(5)
-            ->create(['is_published' => true])
-            ->each(function ($article) use ($popularTag) {
-                $article->tags()->attach($popularTag);
-            });
-
-        Article::factory()
-            ->create(['is_published' => true])
-            ->tags()
-            ->attach($unpopularTag);
-
+        $articles = Article::factory(5)
+            ->create(['is_published' => true]);
+        $articles->each(function ($article) use ($popularTag) {
+            $article->tags()->attach($popularTag);
+        });
+        $popularTag->usage_count = $popularTag->articles()->count();
+        $popularTag->save();
+        $article = Article::factory()->create(['is_published' => true]);
+        $article->tags()->attach($unpopularTag);
+        $unpopularTag->usage_count = $unpopularTag->articles()->count();
+        $unpopularTag->save();
         // Get popular tags
         $popularTags = $this->tagRepository->getPopular(1);
-
         // Assert response
         $this->assertEquals(1, $popularTags->count());
         $this->assertEquals($popularTag->id, $popularTags->first()->id);

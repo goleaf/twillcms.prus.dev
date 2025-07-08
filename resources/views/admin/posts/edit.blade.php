@@ -1,95 +1,69 @@
 @extends('layouts.admin')
+@section('title', __('Edit Post'))
 
 @section('content')
-<div class="container">
-    <h1>Edit Post</h1>
-    <form method="POST" action="{{ route('admin.posts.update', $post) }}">
-        @csrf
-        @method('PUT')
-        
-        <div class="mb-3">
-            <label for="title" class="form-label">Title</label>
-            <input type="text" class="form-control" id="title" name="title" value="{{ old('title', $post->title) }}" required>
-            @error('title')
-                <div class="text-danger">{{ $message }}</div>
-            @enderror
-        </div>
-        
-        <div class="mb-3">
-            <label for="slug" class="form-label">Slug</label>
-            <input type="text" class="form-control" id="slug" name="slug" value="{{ old('slug', $post->slug) }}" required>
-            @error('slug')
-                <div class="text-danger">{{ $message }}</div>
-            @enderror
-        </div>
-        
-        <div class="mb-3">
-            <label for="excerpt" class="form-label">Excerpt</label>
-            <textarea class="form-control" id="excerpt" name="excerpt" rows="3">{{ old('excerpt', $post->excerpt) }}</textarea>
-            @error('excerpt')
-                <div class="text-danger">{{ $message }}</div>
-            @enderror
-        </div>
-        
-        <div class="mb-3">
-            <label for="content" class="form-label">Content</label>
-            <textarea class="form-control" id="content" name="content" rows="10" required>{{ old('content', $post->content) }}</textarea>
-            @error('content')
-                <div class="text-danger">{{ $message }}</div>
-            @enderror
-        </div>
-        
-        <div class="mb-3">
-            <label for="featured_image" class="form-label">Featured Image URL</label>
-            <input type="url" class="form-control" id="featured_image" name="featured_image" value="{{ old('featured_image', $post->featured_image) }}">
-            @error('featured_image')
-                <div class="text-danger">{{ $message }}</div>
-            @enderror
-        </div>
-        
-        <div class="mb-3">
-            <label for="status" class="form-label">Status</label>
-            <select class="form-control" id="status" name="status" required>
-                <option value="draft" {{ old('status', $post->status) == 'draft' ? 'selected' : '' }}>Draft</option>
-                <option value="published" {{ old('status', $post->status) == 'published' ? 'selected' : '' }}>Published</option>
-                <option value="archived" {{ old('status', $post->status) == 'archived' ? 'selected' : '' }}>Archived</option>
-            </select>
-            @error('status')
-                <div class="text-danger">{{ $message }}</div>
-            @enderror
-        </div>
-        
-        @if(isset($categories) && $categories->count() > 0)
-        <div class="mb-3">
-            <label for="categories" class="form-label">Categories</label>
-            <select class="form-control" id="categories" name="categories[]" multiple>
-                @foreach($categories as $category)
-                    <option value="{{ $category->id }}" 
-                        {{ in_array($category->id, old('categories', $post->categories->pluck('id')->toArray())) ? 'selected' : '' }}>
-                        {{ $category->title ?? $category->name }}
-                    </option>
-                @endforeach
-            </select>
-            @error('categories')
-                <div class="text-danger">{{ $message }}</div>
-            @enderror
-        </div>
-        @endif
-        
-        <div class="mb-3">
-            <label for="published_at" class="form-label">Published At</label>
-            <input type="datetime-local" class="form-control" id="published_at" name="published_at" 
-                   value="{{ old('published_at', $post->published_at ? $post->published_at->format('Y-m-d\TH:i') : '') }}">
-            @error('published_at')
-                <div class="text-danger">{{ $message }}</div>
-            @enderror
-        </div>
-        
-        <div class="d-flex gap-2">
-            <button type="submit" class="btn btn-primary">Update Post</button>
-            <a href="{{ route('admin.posts.index') }}" class="btn btn-secondary">Cancel</a>
-            <a href="{{ route('admin.posts.show', $post) }}" class="btn btn-info">View Post</a>
-        </div>
-    </form>
-</div>
+    <div class="max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow p-8 mt-8">
+        <h1 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">{{ __('Edit Post') }}</h1>
+        <form x-data="{ loading: false }" x-on:submit="loading = true" method="POST" action="{{ route('admin.posts.update', $post) }}" enctype="multipart/form-data">
+            @csrf
+            @method('PUT')
+            <div class="mb-4">
+                <label for="title" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ __('Title') }}</label>
+                <input type="text" name="title" id="title" value="{{ old('title', $post->title) }}" required autofocus class="block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white focus:border-blue-500 focus:ring focus:ring-blue-200 dark:focus:ring-blue-600 focus:ring-opacity-50">
+                @error('title')
+                    <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+            <div class="mb-4">
+                <label for="excerpt" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ __('Excerpt') }}</label>
+                <textarea name="excerpt" id="excerpt" rows="2" class="block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white focus:border-blue-500 focus:ring focus:ring-blue-200 dark:focus:ring-blue-600 focus:ring-opacity-50">{{ old('excerpt', $post->excerpt) }}</textarea>
+                @error('excerpt')
+                    <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+            <div class="mb-4">
+                <label for="content" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ __('Content') }}</label>
+                <textarea name="content" id="content" rows="8" class="block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white focus:border-blue-500 focus:ring focus:ring-blue-200 dark:focus:ring-blue-600 focus:ring-opacity-50">{{ old('content', $post->content) }}</textarea>
+                @error('content')
+                    <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+            <div class="mb-4">
+                <label for="featured_image" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ __('Featured Image') }}</label>
+                <input type="file" name="featured_image" id="featured_image" class="block w-full text-sm text-gray-900 dark:text-gray-200 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                @error('featured_image')
+                    <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+            <div class="mb-4">
+                <label for="categories" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ __('Categories') }}</label>
+                <select name="categories[]" id="categories" multiple class="block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white focus:border-blue-500 focus:ring focus:ring-blue-200 dark:focus:ring-blue-600 focus:ring-opacity-50">
+                    @foreach($categories as $category)
+                        <option value="{{ $category->id }}" {{ collect(old('categories', $post->categories->pluck('id')->toArray()))->contains($category->id) ? 'selected' : '' }}>{{ $category->title }}</option>
+                    @endforeach
+                </select>
+                @error('categories')
+                    <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+            <div class="mb-4">
+                <label for="status" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ __('Status') }}</label>
+                <select name="status" id="status" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white" required>
+                    <option value="published" {{ old('status', $post->status) == 'published' ? 'selected' : '' }}>{{ __('Published') }}</option>
+                    <option value="draft" {{ old('status', $post->status) == 'draft' ? 'selected' : '' }}>{{ __('Draft') }}</option>
+                    <option value="archived" {{ old('status', $post->status) == 'archived' ? 'selected' : '' }}>{{ __('Archived') }}</option>
+                </select>
+            </div>
+            <div class="mb-4 flex items-center">
+                <input type="checkbox" name="is_featured" id="is_featured" value="1" {{ old('is_featured', $post->is_featured) ? 'checked' : '' }} class="rounded border-gray-300 dark:border-gray-700 text-blue-600 shadow-sm focus:ring focus:ring-blue-200 dark:focus:ring-blue-600 focus:ring-opacity-50">
+                <label for="is_featured" class="ml-2 block text-sm text-gray-700 dark:text-gray-300">{{ __('Featured') }}</label>
+            </div>
+            <div>
+                <x-button type="submit" variant="primary" x-bind:disabled="loading">
+                    <span x-show="!loading">{{ __('Update Post') }}</span>
+                    <span x-show="loading"><x-loader>{{ __('Saving...') }}</x-loader></span>
+                </x-button>
+            </div>
+        </form>
+    </div>
 @endsection 

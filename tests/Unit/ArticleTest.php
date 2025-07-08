@@ -116,6 +116,7 @@ class ArticleTest extends TestCase
         $relatedArticle->tags()->attach($tag);
 
         $related = $article->getRelated();
+        $this->assertCount(6, $related);
 
         $this->assertTrue($related->contains($relatedArticle));
         $this->assertFalse($related->contains($article));

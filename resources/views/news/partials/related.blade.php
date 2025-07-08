@@ -1,0 +1,1 @@
+@foreach ($relatedArticles->take(6) as $related) 

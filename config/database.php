@@ -16,7 +16,7 @@ return [
     |
     */
 
-    'default' => env('DB_CONNECTION', 'sqlite'),
+    'default' => env('DB_CONNECTION', 'mysql'),
 
     /*
     |--------------------------------------------------------------------------
@@ -62,10 +62,18 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
             'strict' => true,
-            'engine' => null,
+            'engine' => 'InnoDB',
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+                PDO::MYSQL_ATTR_INIT_COMMAND => 'SET sql_mode="STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"',
+                PDO::ATTR_TIMEOUT => 5,
+                PDO::ATTR_PERSISTENT => false,
+                PDO::MYSQL_ATTR_USE_BUFFERED_QUERY => true,
             ]) : [],
+            'dump' => [
+                'dump_binary_path' => env('DB_DUMP_PATH', '/usr/bin'),
+                'timeout' => 60 * 5, // 5 minutes
+            ],
         ],
 
         'mariadb' => [

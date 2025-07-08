@@ -437,9 +437,12 @@ class AdminRoutesTest extends TestCase
     {
         $featuredArticle = Article::factory()->featured()->create();
         $regularArticle = Article::factory()->create(['is_featured' => false]);
-        
+        $tag = Tag::factory()->create();
+        $featuredArticle->tags()->attach($tag);
+        $regularArticle->tags()->attach($tag);
+        $tag->usage_count = $tag->articles()->count();
+        $tag->save();
         $response = $this->get('/admin/articles?featured=1');
-        
         $response->assertStatus(200);
         $response->assertSee($featuredArticle->title);
         $response->assertDontSee($regularArticle->title);
@@ -463,9 +466,14 @@ class AdminRoutesTest extends TestCase
     {
         $featuredTag = Tag::factory()->featured()->create();
         $regularTag = Tag::factory()->create(['is_featured' => false]);
-        
+        $article = Article::factory()->create();
+        $featuredTag->articles()->attach($article);
+        $regularTag->articles()->attach($article);
+        $featuredTag->usage_count = $featuredTag->articles()->count();
+        $regularTag->usage_count = $regularTag->articles()->count();
+        $featuredTag->save();
+        $regularTag->save();
         $response = $this->get('/admin/tags?featured=1');
-        
         $response->assertStatus(200);
         $response->assertSee($featuredTag->name);
         $response->assertDontSee($regularTag->name);
@@ -553,16 +561,6 @@ class AdminRoutesTest extends TestCase
         $response->assertSee('sm:');
         $response->assertSee('md:');
         $response->assertSee('lg:');
-    }
-
-    /** @test */
-    public function admin_dark_mode_classes_exist()
-    {
-        $response = $this->get('/admin/dashboard');
-        
-        $response->assertStatus(200);
-        $response->assertSee('dark:bg-gray-900');
-        $response->assertSee('dark:text-white');
     }
 
     /** @test */

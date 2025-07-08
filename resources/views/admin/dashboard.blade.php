@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
 @section('title', 'Admin Dashboard - News Portal')
 
@@ -181,6 +181,24 @@
                     </h3>
                     <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
                         View and edit all tags
+                    </p>
+                </div>
+            </a>
+
+            <a href="{{ route('admin.statistics') }}" class="relative group bg-white dark:bg-gray-800 p-6 focus-within:ring-2 focus-within:ring-inset focus-within:ring-indigo-500 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow">
+                <div>
+                    <span class="rounded-lg inline-flex p-3 bg-blue-50 dark:bg-blue-900 text-blue-600 dark:text-blue-400 ring-4 ring-white dark:ring-gray-800">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 6.75v10.5m4.5-7.5v7.5m-9 0v-4.5" />
+                        </svg>
+                    </span>
+                </div>
+                <div class="mt-8">
+                    <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">
+                        View Statistics
+                    </h3>
+                    <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                        Portal and content analytics
                     </p>
                 </div>
             </a>

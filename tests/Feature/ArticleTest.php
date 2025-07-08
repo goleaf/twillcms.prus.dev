@@ -15,10 +15,13 @@ class ArticleTest extends TestCase
     {
         // Create test data
         $articles = Article::factory(5)
-            ->create(['is_published' => true])
-            ->each(function ($article) {
-                $article->tags()->attach(Tag::factory()->create());
-            });
+            ->create(['is_published' => true]);
+        $articles->each(function ($article) {
+            $tag = Tag::factory()->create();
+            $article->tags()->attach($tag);
+            $tag->usage_count = $tag->articles()->count();
+            $tag->save();
+        });
 
         // Visit homepage
         $response = $this->get('/');

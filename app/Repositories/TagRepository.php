@@ -22,10 +22,11 @@ class TagRepository
      */
     public function getAllPaginated(int $perPage = 20): LengthAwarePaginator
     {
-        return $this->model->withCount(['articles' => function ($query) {
+        return $this->model->select('tags.id', 'tags.name', 'tags.slug', 'tags.color', 'tags.usage_count', 'tags.is_featured', 'tags.description', 'tags.created_at', 'tags.updated_at', 'tags.deleted_at')
+            ->withCount(['articles' => function ($query) {
                 $query->published();
             }])
-            ->groupBy('tags.id')
+            ->groupBy('tags.id', 'tags.name', 'tags.slug', 'tags.color', 'tags.usage_count', 'tags.is_featured', 'tags.description', 'tags.created_at', 'tags.updated_at', 'tags.deleted_at')
             ->orderBy('name')
             ->having('articles_count', '>', 0)
             ->paginate($perPage);
@@ -37,10 +38,11 @@ class TagRepository
     public function getAll(): Collection
     {
         return Cache::remember('all_tags', 3600, function () {
-            return $this->model->withCount(['articles' => function ($query) {
+            return $this->model->select('tags.id', 'tags.name', 'tags.slug', 'tags.color', 'tags.usage_count', 'tags.is_featured', 'tags.description', 'tags.created_at', 'tags.updated_at', 'tags.deleted_at')
+                ->withCount(['articles' => function ($query) {
                     $query->published();
                 }])
-                ->groupBy('tags.id')
+                ->groupBy('tags.id', 'tags.name', 'tags.slug', 'tags.color', 'tags.usage_count', 'tags.is_featured', 'tags.description', 'tags.created_at', 'tags.updated_at', 'tags.deleted_at')
                 ->having('articles_count', '>', 0)
                 ->orderBy('name')
                 ->get();
@@ -61,10 +63,11 @@ class TagRepository
     public function getPopular(int $limit = 10): Collection
     {
         return Cache::remember('popular_tags', 3600, function () use ($limit) {
-            return $this->model->withCount(['articles' => function ($query) {
+            return $this->model->select('tags.id', 'tags.name', 'tags.slug', 'tags.color', 'tags.usage_count', 'tags.is_featured', 'tags.description', 'tags.created_at', 'tags.updated_at', 'tags.deleted_at')
+                ->withCount(['articles' => function ($query) {
                     $query->published();
                 }])
-                ->groupBy('tags.id')
+                ->groupBy('tags.id', 'tags.name', 'tags.slug', 'tags.color', 'tags.usage_count', 'tags.is_featured', 'tags.description', 'tags.created_at', 'tags.updated_at', 'tags.deleted_at')
                 ->having('articles_count', '>', 0)
                 ->orderByDesc('articles_count')
                 ->limit($limit)
@@ -78,11 +81,12 @@ class TagRepository
     public function getFeatured(int $limit = 5): Collection
     {
         return Cache::remember('featured_tags', 3600, function () use ($limit) {
-            return $this->model->withCount(['articles' => function ($query) {
+            return $this->model->select('tags.id', 'tags.name', 'tags.slug', 'tags.color', 'tags.usage_count', 'tags.is_featured', 'tags.description', 'tags.created_at', 'tags.updated_at', 'tags.deleted_at')
+                ->withCount(['articles' => function ($query) {
                     $query->published();
                 }])
                 ->featured()
-                ->groupBy('tags.id')
+                ->groupBy('tags.id', 'tags.name', 'tags.slug', 'tags.color', 'tags.usage_count', 'tags.is_featured', 'tags.description', 'tags.created_at', 'tags.updated_at', 'tags.deleted_at')
                 ->having('articles_count', '>', 0)
                 ->orderByDesc('articles_count')
                 ->limit($limit)
@@ -95,11 +99,12 @@ class TagRepository
      */
     public function search(string $term, int $perPage = 20): LengthAwarePaginator
     {
-        return $this->model->withCount(['articles' => function ($query) {
+        return $this->model->select('tags.id', 'tags.name', 'tags.slug', 'tags.color', 'tags.usage_count', 'tags.is_featured', 'tags.description', 'tags.created_at', 'tags.updated_at', 'tags.deleted_at')
+            ->withCount(['articles' => function ($query) {
                 $query->published();
             }])
             ->search($term)
-            ->groupBy('tags.id')
+            ->groupBy('tags.id', 'tags.name', 'tags.slug', 'tags.color', 'tags.usage_count', 'tags.is_featured', 'tags.description', 'tags.created_at', 'tags.updated_at', 'tags.deleted_at')
             ->having('articles_count', '>', 0)
             ->orderBy('name')
             ->paginate($perPage);
@@ -111,10 +116,11 @@ class TagRepository
     public function getWithArticleCounts(): Collection
     {
         return Cache::remember('tags_with_counts', 1800, function () {
-            return $this->model->withCount(['articles' => function ($query) {
+            return $this->model->select('tags.id', 'tags.name', 'tags.slug', 'tags.color', 'tags.usage_count', 'tags.is_featured', 'tags.description', 'tags.created_at', 'tags.updated_at', 'tags.deleted_at')
+                ->withCount(['articles' => function ($query) {
                     $query->published();
                 }])
-                ->groupBy('tags.id')
+                ->groupBy('tags.id', 'tags.name', 'tags.slug', 'tags.color', 'tags.usage_count', 'tags.is_featured', 'tags.description', 'tags.created_at', 'tags.updated_at', 'tags.deleted_at')
                 ->having('articles_count', '>', 0)
                 ->orderByDesc('articles_count')
                 ->get();
@@ -127,10 +133,11 @@ class TagRepository
     public function getTagCloud(int $limit = 30): Collection
     {
         return Cache::remember('tag_cloud', 3600, function () use ($limit) {
-            return $this->model->withCount(['articles' => function ($query) {
+            return $this->model->select('tags.id', 'tags.name', 'tags.slug', 'tags.color', 'tags.usage_count', 'tags.is_featured', 'tags.description', 'tags.created_at', 'tags.updated_at', 'tags.deleted_at')
+                ->withCount(['articles' => function ($query) {
                     $query->published();
                 }])
-                ->groupBy('tags.id')
+                ->groupBy('tags.id', 'tags.name', 'tags.slug', 'tags.color', 'tags.usage_count', 'tags.is_featured', 'tags.description', 'tags.created_at', 'tags.updated_at', 'tags.deleted_at')
                 ->having('articles_count', '>', 0)
                 ->orderByDesc('articles_count')
                 ->limit($limit)
@@ -213,6 +220,13 @@ class TagRepository
      */
     public function create(array $data): Tag
     {
+        // Enforce uniqueness for name and slug
+        if (Tag::where('name', $data['name'])->exists()) {
+            throw new \Exception(__('validation.tag_name_unique'));
+        }
+        if (Tag::where('slug', $data['slug'])->exists()) {
+            throw new \Exception(__('validation.tag_slug_unique'));
+        }
         $tag = $this->model->create($data);
         $this->clearCache();
         return $tag;
@@ -223,19 +237,25 @@ class TagRepository
      */
     public function update(Tag $tag, array $data): Tag
     {
+        // Enforce uniqueness for name and slug (ignore current tag)
+        if (isset($data['name']) && Tag::where('name', $data['name'])->where('id', '!=', $tag->id)->exists()) {
+            throw new \Exception(__('validation.tag_name_unique'));
+        }
+        if (isset($data['slug']) && Tag::where('slug', $data['slug'])->where('id', '!=', $tag->id)->exists()) {
+            throw new \Exception(__('validation.tag_slug_unique'));
+        }
         $tag->update($data);
         $this->clearCache();
-        return $tag->fresh();
+        return $tag;
     }
 
     /**
-     * Delete a tag
+     * Delete a tag (soft delete by default)
      */
     public function delete(Tag $tag): bool
     {
-        $result = $tag->delete();
         $this->clearCache();
-        return $result;
+        return $tag->delete(); // Always soft delete
     }
 
     /**
@@ -283,5 +303,97 @@ class TagRepository
                 Cache::forget("trending_tags_{$days}_{$limit}");
             }
         }
+    }
+
+    /**
+     * Bulk delete tags (soft delete by default)
+     */
+    public function bulkDelete(array $ids): void
+    {
+        $tags = $this->model->whereIn('id', $ids)->get();
+        foreach ($tags as $tag) {
+            $this->delete($tag);
+        }
+        $this->clearCache();
+    }
+
+    public function bulkUpdateFeatured(array $ids, bool $isFeatured): void
+    {
+        $this->model->whereIn('id', $ids)->update(['is_featured' => $isFeatured]);
+        $this->clearCache();
+    }
+
+    /**
+     * Get all tags with pagination and filters (admin)
+     */
+    public function getAllPaginatedWithFilters(int $perPage = 20, array $filters = []): LengthAwarePaginator
+    {
+        $perPage = request('per_page', $perPage); // Allow override via request
+        $query = $this->model->select('tags.id', 'tags.name', 'tags.slug', 'tags.color', 'tags.usage_count', 'tags.is_featured', 'tags.description', 'tags.created_at', 'tags.updated_at', 'tags.deleted_at')
+            ->orderBy('name');
+
+        // Case-insensitive search on name and description
+        if (!empty($filters['search'])) {
+            $search = strtolower($filters['search']);
+            $query->where(function ($q) use ($search) {
+                $q->whereRaw('LOWER(name) LIKE ?', ["%{$search}%"])
+                  ->orWhereRaw('LOWER(description) LIKE ?', ["%{$search}%"]);
+            });
+        }
+        // Featured filter (accepts string or boolean)
+        if (isset($filters['featured']) && $filters['featured'] !== '') {
+            if ($filters['featured'] === '1' || $filters['featured'] === 1 || $filters['featured'] === true) {
+                $query->where('is_featured', true);
+            } elseif ($filters['featured'] === '0' || $filters['featured'] === 0 || $filters['featured'] === false) {
+                $query->where('is_featured', false);
+            }
+        }
+        return $query->paginate($perPage)->withQueryString();
+    }
+
+    public function getModel()
+    {
+        return $this->model;
+    }
+
+    public function getPopularWithPostCounts($limit = 20)
+    {
+        return $this->model->withCount(['posts' => function ($query) {
+            $query->where('status', 'published');
+        }])
+        ->orderBy('posts_count', 'desc')
+        ->take($limit)
+        ->get();
+    }
+
+    /**
+     * Update usage_count for a tag based on attached articles
+     */
+    public function updateUsageCount(Tag $tag): void
+    {
+        $tag->usage_count = $tag->articles()->count();
+        $tag->save();
+    }
+
+    /**
+     * Attach a tag to an article and update usage count
+     */
+    public function attachToArticle(Tag $tag, $articleId): void
+    {
+        $tag->articles()->attach($articleId);
+        $tag->usage_count = $tag->articles()->count();
+        $tag->save();
+        $this->clearCache();
+    }
+
+    /**
+     * Detach a tag from an article and update usage count
+     */
+    public function detachFromArticle(Tag $tag, $articleId): void
+    {
+        $tag->articles()->detach($articleId);
+        $tag->usage_count = $tag->articles()->count();
+        $tag->save();
+        $this->clearCache();
     }
 }

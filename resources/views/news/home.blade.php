@@ -32,7 +32,7 @@
             <p class="mt-2 text-lg leading-8 text-gray-600 dark:text-gray-300">The most important stories of the day</p>
             
             <div class="mt-16 space-y-20 lg:mt-20 lg:space-y-20">
-                @foreach($featuredArticles->take(3) as $article)
+                @foreach($featuredArticles->take(6) as $article)
                 <article class="relative isolate flex flex-col gap-8 lg:flex-row">
                     <div class="relative aspect-[16/9] sm:aspect-[2/1] lg:aspect-square lg:w-64 lg:shrink-0">
                         <img 
@@ -45,8 +45,8 @@
                     </div>
                     <div>
                         <div class="flex items-center gap-x-4 text-xs">
-                            <time datetime="{{ $article->published_at->format('Y-m-d') }}" class="text-gray-500 dark:text-gray-400">
-                                {{ $article->published_at->format('M j, Y') }}
+                            <time datetime="{{ optional($article->published_at)->format('Y-m-d') }}" class="text-gray-500 dark:text-gray-400">
+                                {{ optional($article->published_at)->format('M j, Y') }}
                             </time>
                             @if($article->tags->count() > 0)
                                 <a href="{{ route('tags.show', $article->tags->first()->slug) }}" class="relative z-10 rounded-full bg-gray-50 dark:bg-gray-800 px-3 py-1.5 font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
@@ -110,8 +110,8 @@
                     <div class="absolute inset-0 -z-10 rounded-2xl ring-1 ring-inset ring-gray-900/10"></div>
 
                     <div class="flex flex-wrap items-center gap-y-1 overflow-hidden text-sm leading-6 text-gray-300">
-                        <time datetime="{{ $article->published_at->format('Y-m-d') }}" class="mr-8">
-                            {{ $article->published_at->format('M j, Y') }}
+                        <time datetime="{{ optional($article->published_at)->format('Y-m-d') }}" class="mr-8">
+                            {{ optional($article->published_at)->format('M j, Y') }}
                         </time>
                         <div class="-ml-4 flex items-center gap-x-4">
                             <svg viewBox="0 0 2 2" class="-ml-0.5 h-0.5 w-0.5 flex-none fill-white/50">

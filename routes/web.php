@@ -19,8 +19,8 @@ use App\Http\Controllers\Admin\AdminController;
 
 // News Portal Frontend Routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/news', [NewsController::class, 'index'])->name('news.index');
 Route::get('/news/{article:slug}', [NewsController::class, 'show'])->name('news.show');
-Route::get('/tag/{tag:slug}', [TagController::class, 'show'])->name('tag.show');
 Route::get('/search', [NewsController::class, 'search'])->name('search');
 
 // Tags Routes (unlimited categories)
@@ -28,10 +28,24 @@ Route::get('/tags', [TagController::class, 'index'])->name('tags.index');
 Route::get('/tags/{tag:slug}', [TagController::class, 'show'])->name('tags.show');
 
 // Static Pages
-Route::view('/about', 'pages.about')->name('about');
-Route::view('/contact', 'pages.contact')->name('contact');
-Route::view('/privacy', 'pages.privacy')->name('privacy');
-Route::view('/terms', 'pages.terms')->name('terms');
+Route::get('/about', function () {
+    return view('pages.about');
+})->name('about');
+
+Route::get('/contact', function () {
+    return view('pages.contact');
+})->name('contact');
+
+Route::get('/privacy', function () {
+    return view('pages.privacy');
+})->name('privacy');
+
+Route::get('/terms', function () {
+    return view('pages.terms');
+})->name('terms');
+
+// Main Admin Route
+Route::get('/admin', [AdminController::class, 'dashboard'])->name('admin');
 
 // Admin Routes (no authentication as per requirements)
 Route::prefix('admin')->name('admin.')->group(function () {
@@ -47,6 +61,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::delete('/articles/{article}', [AdminController::class, 'destroyArticle'])->name('articles.destroy');
     Route::post('/articles/bulk-action', [AdminController::class, 'bulkActionArticles'])->name('articles.bulk-action');
     
+    // Quick Actions
+    Route::post('/articles/{article}/publish', [AdminController::class, 'publishArticle'])->name('articles.publish');
+    Route::post('/articles/{article}/feature', [AdminController::class, 'featureArticle'])->name('articles.feature');
+    
     // Tags Management
     Route::get('/tags', [AdminController::class, 'tags'])->name('tags.index');
     Route::get('/tags/create', [AdminController::class, 'createTag'])->name('tags.create');
@@ -59,5 +77,5 @@ Route::prefix('admin')->name('admin.')->group(function () {
     
     // Statistics and Analytics
     Route::get('/statistics', [AdminController::class, 'statistics'])->name('statistics');
-    Route::get('/analytics', [AdminController::class, 'analytics'])->name('analytics');
 });
+

@@ -25,25 +25,37 @@ class ArticleRepository
     public function getAllPaginated(int $perPage = 12, array $filters = []): LengthAwarePaginator
     {
         $query = $this->model->with(['tags:id,name,slug,color'])
-            ->published()
-            ->select(['id', 'title', 'slug', 'excerpt', 'image', 'published_at', 'reading_time', 'view_count', 'is_featured'])
+            ->select(['id', 'title', 'slug', 'excerpt', 'image', 'published_at', 'reading_time', 'view_count', 'is_featured', 'status'])
+            ->whereNull('deleted_at')
             ->latest('published_at');
 
-        // Apply filters
+        // Apply status filter (published/draft)
+        if (!empty($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+
+        // Apply featured filter
+        if (isset($filters['featured']) && $filters['featured'] !== '') {
+            if ($filters['featured'] === '1' || $filters['featured'] === 1) {
+                $query->where('is_featured', true);
+            } elseif ($filters['featured'] === '0' || $filters['featured'] === 0) {
+                $query->where('is_featured', false);
+            }
+        }
+
+        // Apply tag filter
         if (!empty($filters['tag'])) {
             $query->whereHas('tags', function ($q) use ($filters) {
                 $q->where('slug', $filters['tag']);
             });
         }
 
+        // Apply search filter
         if (!empty($filters['search'])) {
             $query->search($filters['search']);
         }
 
-        if (!empty($filters['featured'])) {
-            $query->featured();
-        }
-
+        // No published() scope by default for admin; only filter by status if set
         return $query->paginate($perPage)->withQueryString();
     }
 
@@ -54,6 +66,7 @@ class ArticleRepository
     {
         return $this->model->with(['tags:id,name,slug,color'])
             ->published()
+            ->whereNull('deleted_at')
             ->whereHas('tags', function ($query) use ($tag) {
                 $query->where('tags.id', $tag->id);
             })
@@ -65,12 +78,13 @@ class ArticleRepository
     /**
      * Get featured articles
      */
-    public function getFeatured(int $limit = 5): Collection
+    public function getFeatured(int $limit = 6): Collection
     {
         return Cache::remember('featured_articles', 3600, function () use ($limit) {
             return $this->model->with(['tags:id,name,slug,color'])
                 ->featured()
                 ->published()
+                ->whereNull('deleted_at')
                 ->select(['id', 'title', 'slug', 'excerpt', 'image', 'published_at', 'reading_time', 'view_count'])
                 ->latest('published_at')
                 ->limit($limit)
@@ -86,6 +100,7 @@ class ArticleRepository
         return Cache::remember('latest_articles', 1800, function () use ($limit) {
             return $this->model->with(['tags:id,name,slug,color'])
                 ->published()
+                ->whereNull('deleted_at')
                 ->select(['id', 'title', 'slug', 'excerpt', 'image', 'published_at', 'reading_time', 'view_count'])
                 ->latest('published_at')
                 ->limit($limit)
@@ -101,6 +116,7 @@ class ArticleRepository
         return Cache::remember('popular_articles', 3600, function () use ($limit) {
             return $this->model->with(['tags:id,name,slug,color'])
                 ->published()
+                ->whereNull('deleted_at')
                 ->select(['id', 'title', 'slug', 'excerpt', 'image', 'published_at', 'reading_time', 'view_count'])
                 ->orderByDesc('view_count')
                 ->limit($limit)
@@ -132,6 +148,7 @@ class ArticleRepository
 
         return $this->model->with(['tags:id,name,slug,color'])
             ->published()
+            ->whereNull('deleted_at')
             ->whereHas('tags', function ($query) use ($tagIds) {
                 $query->whereIn('tags.id', $tagIds);
             })
@@ -149,6 +166,7 @@ class ArticleRepository
     {
         return $this->model->with(['tags:id,name,slug,color'])
             ->published()
+            ->whereNull('deleted_at')
             ->search($term)
             ->select(['id', 'title', 'slug', 'excerpt', 'image', 'published_at', 'reading_time', 'view_count'])
             ->latest('published_at')
@@ -162,10 +180,10 @@ class ArticleRepository
     {
         Cache::forget('articles_count_by_status');
         return [
-            'total' => $this->model->count(),
-            'published' => $this->model->published()->count(),
-            'draft' => $this->model->where('is_published', false)->count(),
-            'featured' => $this->model->featured()->published()->count(),
+            'total' => $this->model->whereNull('deleted_at')->count(),
+            'published' => $this->model->published()->whereNull('deleted_at')->count(),
+            'draft' => $this->model->where('is_published', false)->whereNull('deleted_at')->count(),
+            'featured' => $this->model->featured()->published()->whereNull('deleted_at')->count(),
         ];
     }
 
@@ -176,14 +194,14 @@ class ArticleRepository
     {
         Cache::forget('articles_statistics');
         return [
-            'total' => $this->model->count(),
-            'published' => $this->model->published()->count(),
-            'draft' => $this->model->where('is_published', false)->count(),
-            'featured' => $this->model->featured()->published()->count(),
-            'total_views' => $this->model->sum('view_count'),
-            'average_reading_time' => $this->model->avg('reading_time'),
-            'most_viewed' => $this->model->published()->orderByDesc('view_count')->first(['title', 'view_count']),
-            'recent_articles' => $this->model->published()->whereNotNull('published_at')->whereNotNull('updated_at')->latest('published_at')->take(5)->get(['title', 'published_at', 'updated_at']),
+            'total' => $this->model->whereNull('deleted_at')->count(),
+            'published' => $this->model->published()->whereNull('deleted_at')->count(),
+            'draft' => $this->model->where('is_published', false)->whereNull('deleted_at')->count(),
+            'featured' => $this->model->featured()->published()->whereNull('deleted_at')->count(),
+            'total_views' => $this->model->whereNull('deleted_at')->sum('view_count'),
+            'average_reading_time' => $this->model->whereNull('deleted_at')->avg('reading_time'),
+            'most_viewed' => $this->model->published()->whereNull('deleted_at')->orderByDesc('view_count')->first(['title', 'view_count']),
+            'recent_articles' => $this->model->published()->whereNull('deleted_at')->whereNotNull('published_at')->whereNotNull('updated_at')->latest('published_at')->take(5)->get(['title', 'published_at', 'updated_at']),
         ];
     }
 
@@ -240,44 +258,36 @@ class ArticleRepository
 
     public function create(array $data): Article
     {
-        if (isset($data['image'])) {
+        if (isset($data['image']) && $data['image'] instanceof \Illuminate\Http\UploadedFile) {
             $data['image'] = $this->uploadImage($data['image']);
         }
-
         $article = $this->model->create($data);
-
         if (isset($data['tags'])) {
             $article->tags()->sync($data['tags']);
         }
-
-        Cache::tags(['articles'])->flush();
-
+        Cache::flush();
         return $article;
     }
 
     public function update(Article $article, array $data): Article
     {
-        if (isset($data['image'])) {
+        if (isset($data['image']) && $data['image'] instanceof \Illuminate\Http\UploadedFile) {
             $this->deleteImage($article->image);
             $data['image'] = $this->uploadImage($data['image']);
         }
-
         $article->update($data);
-
         if (isset($data['tags'])) {
             $article->tags()->sync($data['tags']);
         }
-
-        Cache::tags(['articles'])->flush();
-
+        Cache::flush();
         return $article;
     }
 
     public function delete(Article $article): bool
     {
         $this->deleteImage($article->image);
-        Cache::tags(['articles'])->flush();
-        return $article->delete();
+        Cache::flush();
+        return $article->forceDelete();
     }
 
     private function uploadImage($image): string
@@ -290,5 +300,40 @@ class ArticleRepository
         if ($path) {
             Storage::disk('public')->delete($path);
         }
+    }
+
+    public function bulkUpdateStatus(array $ids, string $status): void
+    {
+        $this->model->whereIn('id', $ids)->update([
+            'status' => $status,
+            'is_published' => $status === 'published',
+            'published_at' => $status === 'published' ? now() : null,
+        ]);
+        $this->clearCache();
+    }
+
+    public function bulkUpdateFeatured(array $ids, bool $isFeatured): void
+    {
+        $this->model->whereIn('id', $ids)->update([
+            'is_featured' => $isFeatured,
+            'status' => $isFeatured ? 'published' : 'draft',
+            'is_published' => $isFeatured,
+            'published_at' => $isFeatured ? now() : null,
+        ]);
+        $this->clearCache();
+    }
+
+    public function bulkDelete(array $ids): void
+    {
+        $articles = $this->model->whereIn('id', $ids)->get();
+        foreach ($articles as $article) {
+            $article->delete();
+        }
+        $this->clearCache();
+    }
+
+    public function getModel()
+    {
+        return $this->model;
     }
 } 

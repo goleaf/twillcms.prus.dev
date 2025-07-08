@@ -16,7 +16,6 @@ return [
 
     // Appearance
     'appearance' => 'Appearance',
-    'theme_color' => 'Theme Color',
     'site_logo' => 'Site Logo',
 
     // Features

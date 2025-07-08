@@ -54,9 +54,11 @@ class FrontendRoutesTest extends TestCase
     public function home_page_displays_featured_articles()
     {
         $featuredArticle = Article::factory()->featured()->create();
-        
+        $tag = Tag::factory()->create();
+        $featuredArticle->tags()->attach($tag);
+        $tag->usage_count = $tag->articles()->count();
+        $tag->save();
         $response = $this->get('/');
-        
         $response->assertStatus(200);
         $response->assertSee($featuredArticle->title);
     }
@@ -169,9 +171,11 @@ class FrontendRoutesTest extends TestCase
     public function tags_index_displays_featured_tags()
     {
         $featuredTag = Tag::factory()->featured()->create();
-        
+        $article = Article::factory()->create();
+        $featuredTag->articles()->attach($article);
+        $featuredTag->usage_count = $featuredTag->articles()->count();
+        $featuredTag->save();
         $response = $this->get('/tags');
-        
         $response->assertStatus(200);
         $response->assertSee($featuredTag->name);
         $response->assertSee('Featured');
@@ -346,15 +350,6 @@ class FrontendRoutesTest extends TestCase
     }
 
     /** @test */
-    public function theme_toggle_button_exists()
-    {
-        $response = $this->get('/');
-        
-        $response->assertStatus(200);
-        $response->assertSee('theme-toggle');
-    }
-
-    /** @test */
     public function footer_links_are_present()
     {
         $response = $this->get('/');
@@ -495,16 +490,6 @@ class FrontendRoutesTest extends TestCase
         $response->assertDontSee('cdn.jsdelivr.net');
         $response->assertDontSee('unpkg.com');
         $response->assertDontSee('cdnjs.cloudflare.com');
-    }
-
-    /** @test */
-    public function dark_mode_classes_exist()
-    {
-        $response = $this->get('/');
-        
-        $response->assertStatus(200);
-        $response->assertSee('dark:bg-gray-900');
-        $response->assertSee('dark:text-white');
     }
 
     /** @test */

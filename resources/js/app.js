@@ -13,10 +13,15 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeSocialSharing();
     initializeImageLazyLoading();
     initializeInfiniteScroll();
-    initializeThemeToggle();
     initializeSmoothScroll();
     initializeLoadingStates();
     initializeModals();
+    initializeNavigation();
+    initializeSearchOverlay();
+    initializeNewsletterForm();
+    initializeNotifications();
+    showLoadingCompleteNotification();
+    initializeSmoothScrolling();
 });
 
 // Enhanced search functionality with autocomplete
@@ -259,27 +264,6 @@ function initializeInfiniteScroll() {
                     });
             }
         }, 100));
-    }
-}
-
-// Theme toggle functionality
-function initializeThemeToggle() {
-    const themeToggle = document.querySelector('#theme-toggle');
-    
-    if (themeToggle) {
-        // Check for saved theme preference or default to light mode
-        const savedTheme = localStorage.getItem('theme') || 'light';
-        document.documentElement.setAttribute('data-theme', savedTheme);
-        
-        themeToggle.addEventListener('click', function() {
-            const currentTheme = document.documentElement.getAttribute('data-theme');
-            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-            
-            document.documentElement.setAttribute('data-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
-            
-            showNotification(`Switched to ${newTheme} mode`, 'info');
-        });
     }
 }
 

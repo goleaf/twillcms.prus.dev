@@ -3,102 +3,85 @@
 namespace App\Http\Controllers;
 
 use App\Models\Article;
-use App\Models\Post;
 use App\Models\Tag;
-use App\Repositories\ArticleRepository;
-use App\Repositories\TagRepository;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
+use Illuminate\Database\Eloquent\Builder;
 
 class NewsController extends Controller
 {
-    protected $articleRepository;
-    protected $tagRepository;
-
-    public function __construct(ArticleRepository $articleRepository, TagRepository $tagRepository)
-    {
-        $this->articleRepository = $articleRepository;
-        $this->tagRepository = $tagRepository;
-    }
-
     /**
-     * Display the main news feed
+     * Display a listing of news articles
      */
-    public function index()
+    public function index(Request $request): View
     {
-        // Featured news (breaking news or important articles)
-        $featuredNews = Post::published()
-            ->featured()
-            ->with(['tags', 'categories'])
-            ->latest()
-            ->take(3)
-            ->get();
+        $query = Article::published()
+            ->with(['tags:id,name,slug,color'])
+            ->latest('published_at');
 
-        // Latest news
-        $latestNews = Post::published()
-            ->with(['tags', 'categories'])
-            ->whereNotIn('id', $featuredNews->pluck('id'))
-            ->latest()
-            ->paginate(12);
-
-        // Popular tags
-        $popularTags = Tag::withCount(['posts' => function ($query) {
-            $query->where('status', 'published');
-        }])
-        ->orderBy('posts_count', 'desc')
-        ->take(20)
-        ->get();
-
-        // Categories for navigation
-        $categories = Category::where('is_active', true)
-            ->withCount(['posts' => function ($query) {
-                $query->where('status', 'published');
-            }])
-            ->orderBy('position')
-            ->get();
-
-        return view('news.index', compact(
-            'featuredNews',
-            'latestNews',
-            'popularTags',
-            'categories'
-        ));
-    }
-
-    /**
-     * Display a specific article
-     */
-    public function show(Article $article)
-    {
-        // Increment view count
-        $this->articleRepository->incrementViews($article);
-
-        // Get related articles
-        $relatedArticles = $this->articleRepository->getRelated($article, 4);
-
-        // Get article tags
-        $tags = $article->tags;
-
-        return view('news.show', compact('article', 'relatedArticles', 'tags'));
-    }
-
-    /**
-     * Search functionality
-     */
-    public function search(Request $request)
-    {
-        $query = $request->get('q');
-
-        if (empty($query)) {
-            return view('news.search', [
-                'articles' => collect(),
-                'query' => '',
-                'totalResults' => 0
-            ]);
+        // Apply tag filter
+        if ($request->filled('tag')) {
+            $query->whereHas('tags', function (Builder $q) use ($request) {
+                $q->where('slug', $request->tag);
+            });
         }
 
-        $articles = $this->articleRepository->search($query);
-        $totalResults = $articles->total();
+        // Apply search filter
+        if ($request->filled('search')) {
+            $query->search($request->search);
+        }
 
-        return view('news.search', compact('articles', 'query', 'totalResults'));
+        // Apply featured filter
+        if ($request->boolean('featured')) {
+            $query->featured();
+        }
+
+        $articles = $query->paginate(12);
+        $popularTags = Tag::getPopular(10);
+
+        return view('news.index', compact('articles', 'popularTags'));
+    }
+
+    /**
+     * Display the specified article
+     */
+    public function show(Request $request, Article $article): View
+    {
+        // Only show published articles
+        if (!$article->is_published) {
+            abort(404);
+        }
+
+        // Increment view count
+        $article->incrementViews();
+
+        // Get related articles
+        $relatedArticles = $article->getRelated(3);
+
+        // Get popular tags
+        $popularTags = Tag::getPopular(10);
+
+        return view('news.show', compact('article', 'relatedArticles', 'popularTags'));
+    }
+
+    /**
+     * Search articles
+     */
+    public function search(Request $request): View
+    {
+        $query = $request->get('q', '');
+        $articles = collect();
+
+        if (strlen($query) >= 3) {
+            $articles = Article::published()
+                ->with(['tags:id,name,slug,color'])
+                ->search($query)
+                ->latest('published_at')
+                ->paginate(12);
+        }
+
+        $popularTags = Tag::getPopular(10);
+
+        return view('news.search', compact('articles', 'query', 'popularTags'));
     }
 }

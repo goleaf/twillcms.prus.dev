@@ -18,43 +18,14 @@ class TagFactory extends Factory
      */
     public function definition(): array
     {
-        $name = fake()->unique()->randomElement([
-            'Technology', 'Business', 'Science', 'Health', 'Sports', 'Entertainment',
-            'Politics', 'World News', 'Education', 'Travel', 'Food', 'Fashion',
-            'Art', 'Music', 'Movies', 'Books', 'Gaming', 'Photography',
-            'Environment', 'Climate', 'Energy', 'Transportation', 'Space',
-            'Medicine', 'Psychology', 'Economics', 'Finance', 'Marketing',
-            'Design', 'Architecture', 'History', 'Culture', 'Society',
-            'Innovation', 'Startups', 'Entrepreneurship', 'Leadership',
-            'Productivity', 'Lifestyle', 'Wellness', 'Fitness', 'Nutrition',
-            'Relationships', 'Parenting', 'Career', 'Personal Development',
-            'Artificial Intelligence', 'Machine Learning', 'Blockchain',
-            'Cryptocurrency', 'Cybersecurity', 'Data Science', 'Programming',
-            'Web Development', 'Mobile Apps', 'Cloud Computing', 'IoT',
-            'Renewable Energy', 'Sustainability', 'Green Technology',
-            'Social Media', 'Digital Marketing', 'Content Creation',
-            'Journalism', 'Communication', 'Public Relations', 'Branding',
-            'E-commerce', 'Retail', 'Manufacturing', 'Agriculture',
-            'Real Estate', 'Construction', 'Automotive', 'Aviation',
-            'Healthcare', 'Biotechnology', 'Pharmaceuticals', 'Telemedicine',
-            'Mental Health', 'Mindfulness', 'Meditation', 'Yoga',
-            'Adventure', 'Outdoor Activities', 'Hiking', 'Camping',
-            'Cooking', 'Recipes', 'Restaurants', 'Wine', 'Coffee',
-            'Pets', 'Animals', 'Nature', 'Wildlife', 'Conservation',
-            'DIY', 'Crafts', 'Home Improvement', 'Gardening', 'Interior Design',
-            'Gadgets', 'Reviews', 'Tutorials', 'How-to', 'Tips',
-            'News Analysis', 'Opinion', 'Editorial', 'Interview', 'Profile',
-            'Breaking News', 'Local News', 'International', 'Global',
-            'Emerging Markets', 'Developing Countries', 'Urban Planning',
-            'Smart Cities', 'Future Trends', 'Predictions', 'Research'
-        ]);
-
+        $name = fake()->unique()->words(2, true) . ' ' . uniqid();
+        $slug = Str::slug($name);
         return [
-            'name' => $name,
-            'slug' => Str::slug($name),
-            'description' => fake()->paragraph(rand(1, 3)),
+            'name' => ucfirst($name),
+            'slug' => $slug,
+            'description' => fake()->sentence(8),
             'color' => fake()->hexColor(),
-            'is_featured' => fake()->boolean(20), // 20% chance of being featured
+            'is_featured' => fake()->boolean(10),
             'usage_count' => fake()->numberBetween(0, 100),
         ];
     }
@@ -105,11 +76,23 @@ class TagFactory extends Factory
         ];
 
         $tags = $categoryTags[$category] ?? $categoryTags['technology'];
-        $tagName = $tags[array_rand($tags)];
-
+        $tagName = $tags[array_rand($tags)] . ' ' . uniqid();
+        $slug = Str::slug($tagName);
         return $this->state(fn (array $attributes) => [
             'name' => $tagName,
-            'slug' => Str::slug($tagName),
+            'slug' => $slug,
         ]);
+    }
+
+    public function configure()
+    {
+        return $this->afterCreating(function (\App\Models\Tag $tag) {
+            $publishedArticle = \App\Models\Article::where('is_published', true)->inRandomOrder()->first();
+            if ($publishedArticle) {
+                $tag->articles()->attach($publishedArticle->id);
+                $tag->usage_count = $tag->articles()->count();
+                $tag->save();
+            }
+        });
     }
 }

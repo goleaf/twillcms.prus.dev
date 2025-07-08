@@ -33,7 +33,14 @@ class NewsPortalTest extends TestCase
         $featuredArticles = Article::factory()->featured()->count(3)->create();
         $latestArticles = Article::factory()->count(6)->create();
         $tags = Tag::factory()->count(5)->create();
-
+        // Attach tags to articles and update usage_count
+        $latestArticles->each(function ($article) use ($tags) {
+            $article->tags()->attach($tags->random(2));
+        });
+        $tags->each(function ($tag) {
+            $tag->usage_count = $tag->articles()->count();
+            $tag->save();
+        });
         $response = $this->get('/');
 
         $response->assertStatus(200);
@@ -85,7 +92,8 @@ class NewsPortalTest extends TestCase
         $tag = Tag::factory()->create();
         $articles = Article::factory()->count(5)->create();
         $tag->articles()->attach($articles);
-
+        $tag->usage_count = $tag->articles()->count();
+        $tag->save();
         $response = $this->get("/tag/{$tag->slug}");
 
         $response->assertStatus(200);
@@ -157,9 +165,16 @@ class NewsPortalTest extends TestCase
     {
         $popularTag = Tag::factory()->create(['usage_count' => 50]);
         $regularTag = Tag::factory()->create(['usage_count' => 5]);
-        
+        // Attach articles to tags to ensure usage_count is correct
+        $articles = Article::factory()->count(50)->create();
+        $popularTag->articles()->attach($articles);
+        $popularTag->usage_count = $popularTag->articles()->count();
+        $popularTag->save();
+        $articles2 = Article::factory()->count(5)->create();
+        $regularTag->articles()->attach($articles2);
+        $regularTag->usage_count = $regularTag->articles()->count();
+        $regularTag->save();
         $popular = $this->tagRepository->getPopular(10);
-        
         $this->assertEquals($popularTag->id, $popular->first()->id);
     }
 
@@ -350,7 +365,7 @@ class NewsPortalTest extends TestCase
         $article1->tags()->attach($tag);
         $article2->tags()->attach($tag);
         
-        $related = $this->articleRepository->getRelated($article1, 5);
+        $related = $this->articleRepository->getRelated($article1, 6);
         
         $this->assertEquals(1, $related->count());
         $this->assertEquals($article2->id, $related->first()->id);

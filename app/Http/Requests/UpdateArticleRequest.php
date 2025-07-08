@@ -64,17 +64,17 @@ class UpdateArticleRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'title.required' => 'The article title is required.',
-            'title.max' => 'The article title may not be greater than 255 characters.',
-            'slug.unique' => 'This slug is already taken. Please choose a different one.',
-            'content.required' => 'The article content is required.',
-            'image.image' => 'The file must be an image.',
-            'image.mimes' => 'The image must be a file of type: jpeg, png, jpg, gif, webp.',
-            'image.max' => 'The image may not be greater than 2MB.',
-            'published_at.before_or_equal' => 'The publication date cannot be in the future.',
-            'tags.array' => 'The tags must be an array.',
-            'tags.*.integer' => 'Each tag must be a valid integer.',
-            'tags.*.exists' => 'The selected tag does not exist.',
+            'title.required' => __('validation.article_title_required'),
+            'title.max' => __('validation.article_title_max'),
+            'slug.unique' => __('validation.article_slug_unique'),
+            'content.required' => __('validation.article_content_required'),
+            'image.image' => __('validation.article_image_image'),
+            'image.mimes' => __('validation.article_image_mimes'),
+            'image.max' => __('validation.article_image_max'),
+            'published_at.before_or_equal' => __('validation.article_published_at_before_or_equal'),
+            'tags.array' => __('validation.article_tags_array'),
+            'tags.*.integer' => __('validation.article_tags_integer'),
+            'tags.*.exists' => __('validation.article_tags_exists'),
         ];
     }
 

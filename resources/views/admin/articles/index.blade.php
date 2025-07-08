@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
 @section('title', 'Manage Articles')
 
@@ -192,11 +192,9 @@
         </div>
 
         <!-- Pagination -->
-        @if($articles->hasPages())
-        <div class="mt-6">
+        <div class="mt-4">
             {{ $articles->links() }}
         </div>
-        @endif
 
         <!-- Bulk Actions -->
         <div class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow p-4">

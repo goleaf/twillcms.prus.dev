@@ -17,10 +17,10 @@ class TagTest extends TestCase
         $tags = Tag::factory(5)->create();
         $article = Article::factory()->create(['is_published' => true]);
         $article->tags()->attach($tags->first());
-
+        $tags->first()->usage_count = $tags->first()->articles()->count();
+        $tags->first()->save();
         // Visit homepage
         $response = $this->get('/');
-
         // Assert response
         $response->assertStatus(200);
         $response->assertViewHas('tags');

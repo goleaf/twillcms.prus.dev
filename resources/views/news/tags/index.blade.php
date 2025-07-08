@@ -55,30 +55,30 @@
                     Trending and popular topics right now
                 </p>
             </div>
-            
-            <div class="mt-12 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+            <div class="mt-12 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 @foreach($featuredTags as $tag)
-                <div class="relative group">
-                    <div class="aspect-[16/9] overflow-hidden rounded-2xl bg-gray-900">
-                        <div class="absolute inset-0 bg-gradient-to-br opacity-80"
-                             style="background: linear-gradient(135deg, {{ $tag->color }}40, {{ $tag->color }}80);">
-                        </div>
-                        <div class="relative h-full flex items-center justify-center p-8">
-                            <div class="text-center">
-                                <h3 class="text-2xl font-bold text-white mb-2">{{ $tag->name }}</h3>
-                                @if($tag->description)
-                                <p class="text-gray-200 text-sm mb-4">{{ Str::limit($tag->description, 100) }}</p>
-                                @endif
-                                <div class="flex items-center justify-center space-x-4 text-sm text-gray-200">
-                                    <span>{{ $tag->usage_count }} articles</span>
-                                </div>
-                            </div>
-                        </div>
-                        <a href="{{ route('tags.show', $tag->slug) }}" class="absolute inset-0">
-                            <span class="sr-only">View {{ $tag->name }} articles</span>
-                        </a>
+                <a href="{{ route('tags.show', $tag->slug) }}" class="group relative flex flex-col rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 shadow hover:shadow-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <div class="flex items-center mb-4">
+                        <div class="w-4 h-4 rounded-full mr-3 border-2 border-white dark:border-gray-900" style="background-color: {{ $tag->color }}"></div>
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
+                            {{ $tag->name }}
+                        </h3>
+                        @if($tag->is_featured)
+                        <span class="ml-2 inline-flex items-center rounded-full bg-yellow-100 px-2 py-1 text-xs font-medium text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                            Featured
+                        </span>
+                        @endif
                     </div>
-                </div>
+                    @if($tag->description)
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                        {{ Str::limit($tag->description, 100) }}
+                    </p>
+                    @endif
+                    <div class="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 mt-auto">
+                        <span>{{ $tag->usage_count }} {{ Str::plural('article', $tag->usage_count) }}</span>
+                        <span class="text-indigo-600 dark:text-indigo-400 group-hover:text-indigo-500">View articles →</span>
+                    </div>
+                </a>
                 @endforeach
             </div>
         </div>
@@ -92,49 +92,25 @@
                 {{ $search ? 'Search Results' : 'All Topics' }}
             </h2>
             <div class="text-sm text-gray-600 dark:text-gray-400">
-                {{ $tags->total() }} {{ Str::plural('topic', $tags->total()) }} found
+                {{ pagination_count($tags, 'topic') }}
             </div>
         </div>
-
         @if($tags->count() > 0)
-        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             @foreach($tags as $tag)
-            <div class="group relative rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 hover:shadow-lg transition-shadow duration-200">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="flex items-center">
-                        <div class="w-3 h-3 rounded-full mr-3" style="background-color: {{ $tag->color }}"></div>
-                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
-                            {{ $tag->name }}
-                        </h3>
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-lg transition-shadow flex flex-col h-full">
+                    <div class="p-6 flex-1 flex flex-col">
+                        <h2 class="text-xl font-semibold mb-2 text-gray-900 dark:text-white">{{ $tag->name }}</h2>
+                        <p class="text-gray-600 dark:text-gray-300 flex-1">{{ $tag->description }}</p>
                     </div>
-                    @if($tag->is_featured)
-                    <span class="inline-flex items-center rounded-full bg-yellow-100 px-2 py-1 text-xs font-medium text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
-                        Featured
-                    </span>
-                    @endif
+                    <div class="p-6 pt-0">
+                        <a href="{{ route('tags.show', $tag->slug) }}">
+                            <x-button variant="primary">{{ __('View Tag') }}</x-button>
+                        </a>
+                    </div>
                 </div>
-                
-                @if($tag->description)
-                <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                    {{ Str::limit($tag->description, 100) }}
-                </p>
-                @endif
-                
-                <div class="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-                    <span>{{ $tag->usage_count }} {{ Str::plural('article', $tag->usage_count) }}</span>
-                    <span class="text-indigo-600 dark:text-indigo-400 group-hover:text-indigo-500">
-                        View articles →
-                    </span>
-                </div>
-                
-                <a href="{{ route('tags.show', $tag->slug) }}" class="absolute inset-0">
-                    <span class="sr-only">View {{ $tag->name }} articles</span>
-                </a>
-            </div>
             @endforeach
         </div>
-
-        <!-- Pagination -->
         <div class="mt-12">
             {{ $tags->links() }}
         </div>
@@ -170,16 +146,12 @@
                     Most discussed topics this month
                 </p>
             </div>
-            
-            <div class="flex flex-wrap justify-center gap-4">
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 justify-center">
                 @foreach($popularTags as $tag)
-                <a href="{{ route('tags.show', $tag->slug) }}" 
-                   class="inline-flex items-center rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                   style="background-color: {{ $tag->color }}20; color: {{ $tag->color }}; border: 1px solid {{ $tag->color }}40;">
-                    {{ $tag->name }}
-                    <span class="ml-2 inline-flex items-center rounded-full bg-white/20 px-2 py-0.5 text-xs font-medium">
-                        {{ $tag->usage_count }}
-                    </span>
+                <a href="{{ route('tags.show', $tag->slug) }}" class="group flex flex-col items-center rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 shadow hover:shadow-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <div class="w-4 h-4 rounded-full mb-2 border-2 border-white dark:border-gray-900" style="background-color: {{ $tag->color }}"></div>
+                    <span class="text-base font-semibold text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400">{{ $tag->name }}</span>
+                    <span class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ $tag->usage_count }} {{ Str::plural('article', $tag->usage_count) }}</span>
                 </a>
                 @endforeach
             </div>

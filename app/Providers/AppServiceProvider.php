@@ -7,9 +7,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
-use App\Models\Post;
-use App\Observers\PostObserver;
-use App\Models\Category;
+use Illuminate\Pagination\Paginator;
+use App\Models\Article;
+use App\Models\Tag;
+use App\Observers\ArticleObserver;
+use App\Observers\TagObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -43,6 +45,15 @@ class AppServiceProvider extends ServiceProvider
             return Category::where('id', $value)->orWhere('slug', $value)->firstOrFail();
         });
 
-        Post::observe(PostObserver::class);
+        // Use Bootstrap pagination views
+        Paginator::useBootstrapFive();
+
+        // Register model observers for caching and maintenance
+        Article::observe(ArticleObserver::class);
+        Tag::observe(TagObserver::class);
+
+        if (file_exists(app_path('helpers.php'))) {
+            require_once app_path('helpers.php');
+        }
     }
 }

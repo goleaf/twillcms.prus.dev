@@ -7,9 +7,15 @@
 
     <title>{{ config('app.name', 'News Portal') }}</title>
 
-    <!-- Fonts (using local fonts from npm) -->
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700|playfair-display:400,500,600,700" rel="stylesheet" />
+    <!-- Use system fonts for performance -->
+    <style>
+        :root {
+            --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            --font-serif: Georgia, Cambria, 'Times New Roman', Times, serif;
+        }
+        body { font-family: var(--font-sans); }
+        .font-display { font-family: var(--font-serif); }
+    </style>
 
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -19,121 +25,70 @@
     <x-search-overlay />
 
     <!-- Navigation -->
-    <nav class="fixed inset-x-0 top-0 z-40 backdrop-blur-lg bg-white/80 dark:bg-gray-900/80 border-b border-gray-200 dark:border-gray-700">
-        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div class="flex h-16 items-center justify-between">
-                <!-- Logo -->
-                <div class="flex-shrink-0">
-                    <a href="{{ route('home') }}" class="text-xl font-bold text-gray-900 dark:text-white">
+    <nav class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-50" x-data="{ mobileOpen: false, trapFocus(e) { if (!this.mobileOpen) return; const focusable = $refs.mobileMenu.querySelectorAll('a, button, [tabindex]:not([tabindex=\'-1\'])'); if (!focusable.length) return; const first = focusable[0]; const last = focusable[focusable.length - 1]; if (e.key === 'Tab') { if (e.shiftKey) { if (document.activeElement === first) { e.preventDefault(); last.focus(); } } else { if (document.activeElement === last) { e.preventDefault(); first.focus(); } } } } }" x-on:keydown.tab="trapFocus($event)">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <a href="{{ url('/') }}" class="flex items-center text-xl font-bold text-blue-600 dark:text-blue-400 transition-colors duration-200 hover:scale-105 motion-safe:transition-transform motion-reduce:transition-none font-display">
                         {{ config('app.name', 'News Portal') }}
                     </a>
-                </div>
-
-                <!-- Navigation Links -->
-                <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
-                    <a href="{{ route('home') }}" class="inline-flex items-center px-1 pt-1 text-sm font-medium {{ request()->routeIs('home') ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white' }}">
-                        Home
-                    </a>
-                    <a href="{{ route('tags.index') }}" class="inline-flex items-center px-1 pt-1 text-sm font-medium {{ request()->routeIs('tags.*') ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white' }}">
-                        Tags
-                    </a>
-                    <a href="{{ route('about') }}" class="inline-flex items-center px-1 pt-1 text-sm font-medium {{ request()->routeIs('about') ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white' }}">
-                        About
-                    </a>
-                    <a href="{{ route('admin.dashboard') }}" class="inline-flex items-center px-1 pt-1 text-sm font-medium {{ request()->routeIs('admin.*') ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white' }}">
-                        Admin
-                    </a>
-                </div>
-
-                <!-- Search and Theme Toggle -->
-                <div class="flex items-center space-x-4">
-                    <!-- Search Trigger -->
-                    <button
-                        type="button"
-                        onclick="window.dispatchEvent(new CustomEvent('toggle-search'))"
-                        class="rounded-full p-2 text-gray-500 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-gray-400 dark:hover:text-white"
-                    >
-                        <span class="sr-only">Search</span>
-                        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd" />
+                    <!-- Desktop Nav -->
+                    <div class="hidden sm:-my-px sm:ml-10 sm:flex space-x-8">
+                        <a href="{{ route('home') }}" class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium {{ request()->routeIs('home') ? 'border-blue-500 text-gray-900 dark:text-white' : 'border-transparent text-gray-500 dark:text-gray-300 hover:border-gray-300 hover:text-gray-700 dark:hover:text-white' }} focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200">Home</a>
+                        <a href="{{ route('news.index') }}" class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium {{ request()->routeIs('news.*') ? 'border-blue-500 text-gray-900 dark:text-white' : 'border-transparent text-gray-500 dark:text-gray-300 hover:border-gray-300 hover:text-gray-700 dark:hover:text-white' }} focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200">News</a>
+                        <a href="{{ route('tags.index') }}" class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium {{ request()->routeIs('tags.*') ? 'border-blue-500 text-gray-900 dark:text-white' : 'border-transparent text-gray-500 dark:text-gray-300 hover:border-gray-300 hover:text-gray-700 dark:hover:text-white' }} focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200">Topics</a>
+                        <a href="{{ route('about') }}" class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium {{ request()->routeIs('about') ? 'border-blue-500 text-gray-900 dark:text-white' : 'border-transparent text-gray-500 dark:text-gray-300 hover:border-gray-300 hover:text-gray-700 dark:hover:text-white' }} focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200">About</a>
+                        <a href="{{ route('contact') }}" class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium {{ request()->routeIs('contact') ? 'border-blue-500 text-gray-900 dark:text-white' : 'border-transparent text-gray-500 dark:text-gray-300 hover:border-gray-300 hover:text-gray-700 dark:hover:text-white' }} focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200">Contact</a>
+                        <a href="{{ route('admin') }}" class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium {{ request()->routeIs('admin.*') ? 'border-red-500 text-gray-900 dark:text-white' : 'border-transparent text-red-500 dark:text-red-400 hover:border-red-300 hover:text-red-700 dark:hover:text-red-300' }} focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors duration-200">Admin</a>
+                    </div>
+                    <!-- Hamburger for Mobile -->
+                    <button @click="mobileOpen = true" class="sm:hidden ml-4 p-2 rounded-md text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Open menu" :aria-expanded="mobileOpen.toString()" aria-controls="mobile-menu">
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                         </svg>
                     </button>
-
-                    <!-- Theme Toggle -->
-                    <button
-                        type="button"
-                        id="theme-toggle"
-                        class="rounded-full p-2 text-gray-500 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-gray-400 dark:hover:text-white"
-                    >
-                        <span class="sr-only">Toggle theme</span>
-                        <svg id="theme-toggle-dark-icon" class="hidden h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" />
-                        </svg>
-                        <svg id="theme-toggle-light-icon" class="hidden h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
-                        </svg>
-                    </button>
-
-                    <!-- Mobile menu button -->
-                    <button 
-                        type="button" 
-                        id="mobile-menu-button"
-                        class="sm:hidden rounded-md p-2 text-gray-500 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-gray-400 dark:hover:text-white"
-                    >
-                        <span class="sr-only">Open main menu</span>
-                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                </div>
+                <div class="flex items-center">
+                    <!-- Search button -->
+                    <button id="toggle-search" class="p-2 rounded-full text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Open search">
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
                     </button>
                 </div>
             </div>
         </div>
-
-        <!-- Mobile menu -->
-        <div id="mobile-menu" class="hidden sm:hidden">
-            <div class="space-y-1 px-2 pb-3 pt-2">
-                <a href="{{ route('home') }}" class="block rounded-md px-3 py-2 text-base font-medium {{ request()->routeIs('home') ? 'bg-indigo-50 text-indigo-700' : 'text-gray-900 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700' }}">Home</a>
-                <a href="{{ route('tags.index') }}" class="block rounded-md px-3 py-2 text-base font-medium {{ request()->routeIs('tags.*') ? 'bg-indigo-50 text-indigo-700' : 'text-gray-900 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700' }}">Tags</a>
-                <a href="{{ route('about') }}" class="block rounded-md px-3 py-2 text-base font-medium {{ request()->routeIs('about') ? 'bg-indigo-50 text-indigo-700' : 'text-gray-900 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700' }}">About</a>
-                <a href="{{ route('admin.dashboard') }}" class="block rounded-md px-3 py-2 text-base font-medium {{ request()->routeIs('admin.*') ? 'bg-indigo-50 text-indigo-700' : 'text-gray-900 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700' }}">Admin</a>
+        <!-- Mobile Menu -->
+        <div x-ref="mobileMenu" x-show="mobileOpen" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 -translate-x-8" x-transition:enter-end="opacity-100 translate-x-0" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 translate-x-0" x-transition:leave-end="opacity-0 -translate-x-8" class="fixed inset-0 z-50 bg-black/40 flex sm:hidden" style="display: none;" role="dialog" aria-modal="true" aria-label="Main menu">
+            <div class="relative w-80 max-w-full bg-white dark:bg-gray-900 shadow-xl h-full flex flex-col py-6 px-6 focus:outline-none">
+                <button @click="mobileOpen = false" class="absolute top-4 right-4 p-2 rounded-md text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Close menu">
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+                <nav class="mt-12 flex flex-col space-y-4" aria-label="Mobile main menu">
+                    <a href="{{ route('home') }}" class="px-4 py-2 rounded text-lg font-medium {{ request()->routeIs('home') ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800' }} focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200">Home</a>
+                    <a href="{{ route('news.index') }}" class="px-4 py-2 rounded text-lg font-medium {{ request()->routeIs('news.*') ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800' }} focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200">News</a>
+                    <a href="{{ route('tags.index') }}" class="px-4 py-2 rounded text-lg font-medium {{ request()->routeIs('tags.*') ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800' }} focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200">Topics</a>
+                    <a href="{{ route('about') }}" class="px-4 py-2 rounded text-lg font-medium {{ request()->routeIs('about') ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800' }} focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200">About</a>
+                    <a href="{{ route('contact') }}" class="px-4 py-2 rounded text-lg font-medium {{ request()->routeIs('contact') ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800' }} focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200">Contact</a>
+                    <a href="{{ route('admin') }}" class="px-4 py-2 rounded text-lg font-medium {{ request()->routeIs('admin.*') ? 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-200' : 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20' }} focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors duration-200">Admin</a>
+                </nav>
             </div>
+            <div class="flex-1" @click="mobileOpen = false"></div>
         </div>
     </nav>
 
     <!-- Main Content -->
-    <main class="min-h-screen pt-16">
+    <main class="min-h-screen">
         @if(session('success'))
-            <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4">
-                <div class="rounded-md bg-green-50 p-4">
-                    <div class="flex">
-                        <div class="flex-shrink-0">
-                            <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                            </svg>
-                        </div>
-                        <div class="ml-3">
-                            <p class="text-sm font-medium text-green-800">{{ session('success') }}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <x-toast type="success" x-transition:enter="motion-safe:transition-opacity motion-safe:duration-300 motion-safe:ease-out" x-transition:leave="motion-safe:transition-opacity motion-safe:duration-200 motion-safe:ease-in">{{ session('success') }}</x-toast>
         @endif
-
         @if(session('error'))
-            <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4">
-                <div class="rounded-md bg-red-50 p-4">
-                    <div class="flex">
-                        <div class="flex-shrink-0">
-                            <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
-                            </svg>
-                        </div>
-                        <div class="ml-3">
-                            <p class="text-sm font-medium text-red-800">{{ session('error') }}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <x-toast type="error" x-transition:enter="motion-safe:transition-opacity motion-safe:duration-300 motion-safe:ease-out" x-transition:leave="motion-safe:transition-opacity motion-safe:duration-200 motion-safe:ease-in">{{ session('error') }}</x-toast>
+        @endif
+        @if(session('info'))
+            <x-toast type="info" x-transition:enter="motion-safe:transition-opacity motion-safe:duration-300 motion-safe:ease-out" x-transition:leave="motion-safe:transition-opacity motion-safe:duration-200 motion-safe:ease-in">{{ session('info') }}</x-toast>
         @endif
 
         @yield('content')
@@ -142,9 +97,10 @@
     <!-- Back to Top Button -->
     <button
         id="scroll-to-top"
-        class="fixed bottom-8 right-8 z-50 rounded-full bg-indigo-600 p-3 text-white shadow-lg transition-all duration-300 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 opacity-0 invisible"
+        class="fixed bottom-8 right-8 z-50 rounded-full bg-indigo-600 p-3 text-white shadow-lg transition-all duration-300 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 opacity-0 invisible motion-safe:transition-transform motion-reduce:transition-none"
+        @click="window.scrollTo({top: 0, behavior: 'smooth'})"
     >
-        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" />
         </svg>
     </button>
@@ -154,23 +110,24 @@
         <div class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
                 <div class="col-span-1 md:col-span-2">
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">{{ config('app.name', 'News Portal') }}</h3>
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 font-display">{{ config('app.name', 'News Portal') }}</h3>
                     <p class="text-gray-600 dark:text-gray-400 mb-4">Your trusted source for the latest news and insights across technology, business, science, and more.</p>
                 </div>
                 <div>
                     <h4 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider mb-4">Quick Links</h4>
                     <ul class="space-y-2">
-                        <li><a href="{{ route('home') }}" class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Home</a></li>
-                        <li><a href="{{ route('tags.index') }}" class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Tags</a></li>
-                        <li><a href="{{ route('about') }}" class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">About</a></li>
-                        <li><a href="{{ route('contact') }}" class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Contact</a></li>
+                        <li><a href="{{ route('home') }}" class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">Home</a></li>
+                        <li><a href="{{ route('news.index') }}" class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">News</a></li>
+                        <li><a href="{{ route('tags.index') }}" class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">Topics</a></li>
+                        <li><a href="{{ route('about') }}" class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">About</a></li>
+                        <li><a href="{{ route('contact') }}" class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">Contact</a></li>
                     </ul>
                 </div>
                 <div>
                     <h4 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider mb-4">Legal</h4>
                     <ul class="space-y-2">
-                        <li><a href="{{ route('privacy') }}" class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Privacy Policy</a></li>
-                        <li><a href="{{ route('terms') }}" class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Terms of Service</a></li>
+                        <li><a href="{{ route('privacy') }}" class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">Privacy Policy</a></li>
+                        <li><a href="{{ route('terms') }}" class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">Terms of Service</a></li>
                     </ul>
                 </div>
             </div>
