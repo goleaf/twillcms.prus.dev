@@ -16,7 +16,7 @@
         <rect width="100%" height="100%" fill="url(#about-hero-gradient-dark)" class="hidden dark:block" />
     </svg>
     <section class="relative prose prose-lg max-w-none dark:prose-invert prose-indigo">
-        <h1 class="text-3xl font-bold mb-4 text-gray-900 dark:text-white">@lang('About')</h1>
-        <p class="text-lg text-gray-700 dark:text-gray-300">@lang('This is the about page.')</p>
+                        <h1 class="text-3xl font-bold mb-4 text-gray-900 dark:text-white">About</h1>
+                <p class="text-lg text-gray-700 dark:text-gray-300">This is the about page.</p>
     </section>
 </main> 

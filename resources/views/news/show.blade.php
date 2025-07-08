@@ -1,36 +1,50 @@
 @extends('layouts.app')
 @section('title', $article->title)
 @section('meta')
-    <meta name="description" content="{{ $article->excerpt ?? __('Read the full article on our news portal.') }}">
+    <meta name="description" content="{{ $article->excerpt ?? 'Read the full article on our news portal.' }}">
 @endsection
 
 @section('content')
-    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 bg-indigo-700 text-white px-4 py-2 rounded z-50">{{ __('Skip to main content') }}</a>
-    <main id="main-content" tabindex="-1" aria-label="{{ __('Article Content') }}">
-        <div class="max-w-3xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow p-8 mt-8">
-            <h1 class="text-4xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-5xl lg:text-6xl mb-4">{{ $article->title }}</h1>
-            <div class="mb-4 flex flex-wrap items-center gap-4 text-gray-600 dark:text-gray-300 text-sm">
-                <span class="font-semibold">{{ __('Published At') }}:</span> {{ $article->published_at ? $article->published_at->format('Y-m-d H:i') : __('N/A') }}
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-blue-600 text-white px-4 py-2 rounded z-50">Skip to main content</a>
+    <main id="main-content" tabindex="-1" aria-label="Article Content">
+        <article class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Article metadata -->
+            <div class="mb-6 text-sm text-gray-500 dark:text-gray-400">
+                <span class="font-semibold">Published At:</span> {{ $article->published_at ? $article->published_at->format('Y-m-d H:i') : 'N/A' }}
                 @if($article->author)
-                    <span class="ml-4"><span class="font-semibold">{{ __('Author') }}:</span> {{ $article->author->name }}</span>
+                    <span class="ml-4"><span class="font-semibold">Author:</span> {{ $article->author->name }}</span>
                 @endif
-                @if($article->tags->isNotEmpty())
-                    <span class="ml-4 flex flex-wrap gap-2 items-center">
-                        <span class="font-semibold">{{ __('Tags') }}:</span>
+                @if($article->tags->count() > 0)
+                    <div class="mt-2">
+                        <span class="font-semibold">Tags:</span>
                         @foreach($article->tags as $tag)
-                            <a href="{{ route('tag.show', $tag) }}" class="inline-flex items-center px-3 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900 transition-shadow">{{ $tag->name }}</a>
+                            <a href="{{ route('tags.show', $tag->slug) }}" 
+                               class="inline-block ml-2 px-2 py-1 text-xs rounded-full hover:opacity-80 transition-opacity"
+                               style="background-color: {{ $tag->color }}20; color: {{ $tag->color }};">
+                                {{ $tag->name }}
+                            </a>
                         @endforeach
-                    </span>
+                    </div>
                 @endif
             </div>
-            <div class="prose prose-lg max-w-none dark:prose-invert prose-indigo mb-8">
+
+            <!-- Article title -->
+            <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-6">{{ $article->title }}</h1>
+            
+            <!-- Article content -->
+            <div class="prose prose-lg max-w-none dark:prose-invert">
                 {!! $article->content !!}
             </div>
-            <div>
-                <a href="{{ route('news.index') }}" class="focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900 transition-shadow">
-                    <x-button variant="secondary">{{ __('Back to News') }}</x-button>
-                </a>
+
+            <!-- Navigation -->
+            <div class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+                <x-button variant="secondary">Back to News</x-button>
             </div>
-        </div>
+        </article>
+
+        <!-- Related Articles -->
+        @if(isset($relatedArticles) && $relatedArticles->count() > 0)
+            <x-related-news :articles="$relatedArticles" />
+        @endif
     </main>
 @endsection 
