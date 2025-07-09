@@ -57,7 +57,7 @@ class TaxonomyUpdateRequest extends FormRequest
                         $fail('Parent taxonomy can only be set for category type.');
                     }
                     // Prevent setting parent to self
-                    if ($value && $value == $this->route('taxonomy')) {
+                    if ($value && $value == ($this->route('taxonomy') ?? $this->route('id'))) {
                         $fail('A taxonomy cannot be its own parent.');
                     }
                 }
