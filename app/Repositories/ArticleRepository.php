@@ -4,6 +4,7 @@ namespace App\Repositories;
 
 use App\Models\Article;
 use App\Models\Tag;
+use Aliziodev\LaravelTaxonomy\Models\Taxonomy;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Cache;
@@ -13,18 +14,22 @@ use Illuminate\Support\Facades\Storage;
 class ArticleRepository
 {
     protected Article $model;
+    protected TaxonomyRepository $taxonomyRepository;
 
-    public function __construct(Article $model)
+    public function __construct(Article $model, TaxonomyRepository $taxonomyRepository)
     {
         $this->model = $model;
+        $this->taxonomyRepository = $taxonomyRepository;
     }
 
     /**
-     * Get all published articles with pagination
+     * Get all published articles with pagination and taxonomy filtering
      */
     public function getAllPaginated(int $perPage = 12, array $filters = []): LengthAwarePaginator
     {
-        $query = $this->model->with(['tags:id,name,slug,color'])
+        $query = $this->model->with(['taxonomies' => function ($query) {
+                $query->select(['id', 'name', 'slug', 'type', 'meta']);
+            }])
             ->select(['id', 'title', 'slug', 'excerpt', 'image', 'published_at', 'reading_time', 'view_count', 'is_featured', 'status'])
             ->whereNull('deleted_at')
             ->latest('published_at');
@@ -43,11 +48,25 @@ class ArticleRepository
             }
         }
 
+        // Apply taxonomy filters
+        if (!empty($filters['taxonomy'])) {
+            $query->withTaxonomySlug($filters['taxonomy']);
+        }
+
         // Apply tag filter
         if (!empty($filters['tag'])) {
-            $query->whereHas('tags', function ($q) use ($filters) {
-                $q->where('slug', $filters['tag']);
-            });
+            $query->withTaxonomySlug($filters['tag'], 'tag');
+        }
+
+        // Apply category filter
+        if (!empty($filters['category'])) {
+            $query->withTaxonomySlug($filters['category'], 'category');
+        }
+
+        // Apply multiple taxonomy filters (OR condition)
+        if (!empty($filters['taxonomies'])) {
+            $taxonomyIds = is_array($filters['taxonomies']) ? $filters['taxonomies'] : [$filters['taxonomies']];
+            $query->withAnyTaxonomies($taxonomyIds);
         }
 
         // Apply search filter
@@ -55,15 +74,86 @@ class ArticleRepository
             $query->search($filters['search']);
         }
 
-        // No published() scope by default for admin; only filter by status if set
         return $query->paginate($perPage)->withQueryString();
     }
 
     /**
-     * Get articles by tag with pagination
+     * Get articles by taxonomy with pagination
+     */
+    public function getByTaxonomy(Taxonomy $taxonomy, int $perPage = 12): LengthAwarePaginator
+    {
+        return $this->model->with(['taxonomies' => function ($query) {
+                $query->select(['id', 'name', 'slug', 'type', 'meta']);
+            }])
+            ->published()
+            ->whereNull('deleted_at')
+            ->withTaxonomy($taxonomy->id)
+            ->select(['id', 'title', 'slug', 'excerpt', 'image', 'published_at', 'reading_time', 'view_count'])
+            ->latest('published_at')
+            ->paginate($perPage);
+    }
+
+    /**
+     * Get articles by taxonomy slug
+     */
+    public function getByTaxonomySlug(string $slug, string $type = null, int $perPage = 12): LengthAwarePaginator
+    {
+        return $this->model->with(['taxonomies' => function ($query) {
+                $query->select(['id', 'name', 'slug', 'type', 'meta']);
+            }])
+            ->published()
+            ->whereNull('deleted_at')
+            ->withTaxonomySlug($slug, $type)
+            ->select(['id', 'title', 'slug', 'excerpt', 'image', 'published_at', 'reading_time', 'view_count'])
+            ->latest('published_at')
+            ->paginate($perPage);
+    }
+
+    /**
+     * Get articles by multiple taxonomies (OR condition)
+     */
+    public function getByAnyTaxonomies(array $taxonomyIds, int $perPage = 12): LengthAwarePaginator
+    {
+        return $this->model->with(['taxonomies' => function ($query) {
+                $query->select(['id', 'name', 'slug', 'type', 'meta']);
+            }])
+            ->published()
+            ->whereNull('deleted_at')
+            ->withAnyTaxonomies($taxonomyIds)
+            ->select(['id', 'title', 'slug', 'excerpt', 'image', 'published_at', 'reading_time', 'view_count'])
+            ->latest('published_at')
+            ->paginate($perPage);
+    }
+
+    /**
+     * Get articles by multiple taxonomies (AND condition)
+     */
+    public function getByAllTaxonomies(array $taxonomyIds, int $perPage = 12): LengthAwarePaginator
+    {
+        return $this->model->with(['taxonomies' => function ($query) {
+                $query->select(['id', 'name', 'slug', 'type', 'meta']);
+            }])
+            ->published()
+            ->whereNull('deleted_at')
+            ->withAllTaxonomies($taxonomyIds)
+            ->select(['id', 'title', 'slug', 'excerpt', 'image', 'published_at', 'reading_time', 'view_count'])
+            ->latest('published_at')
+            ->paginate($perPage);
+    }
+
+    /**
+     * Get articles by tag (backward compatibility)
      */
     public function getByTag(Tag $tag, int $perPage = 12): LengthAwarePaginator
     {
+        // Find the corresponding taxonomy for this tag
+        $taxonomy = $this->taxonomyRepository->getBySlug($tag->slug, 'tag');
+        
+        if ($taxonomy) {
+            return $this->getByTaxonomy($taxonomy, $perPage);
+        }
+
+        // Fallback to original method if taxonomy not found
         return $this->model->with(['tags:id,name,slug,color'])
             ->published()
             ->whereNull('deleted_at')
@@ -76,12 +166,14 @@ class ArticleRepository
     }
 
     /**
-     * Get featured articles
+     * Get featured articles with taxonomy support
      */
     public function getFeatured(int $limit = 6): Collection
     {
-        return Cache::remember('featured_articles', 3600, function () use ($limit) {
-            return $this->model->with(['tags:id,name,slug,color'])
+        return Cache::remember('featured_articles_taxonomy', 3600, function () use ($limit) {
+            return $this->model->with(['taxonomies' => function ($query) {
+                    $query->select(['id', 'name', 'slug', 'type', 'meta']);
+                }])
                 ->featured()
                 ->published()
                 ->whereNull('deleted_at')
@@ -93,12 +185,14 @@ class ArticleRepository
     }
 
     /**
-     * Get latest articles
+     * Get latest articles with taxonomy support
      */
     public function getLatest(int $limit = 10): Collection
     {
-        return Cache::remember('latest_articles', 1800, function () use ($limit) {
-            return $this->model->with(['tags:id,name,slug,color'])
+        return Cache::remember('latest_articles_taxonomy', 1800, function () use ($limit) {
+            return $this->model->with(['taxonomies' => function ($query) {
+                    $query->select(['id', 'name', 'slug', 'type', 'meta']);
+                }])
                 ->published()
                 ->whereNull('deleted_at')
                 ->select(['id', 'title', 'slug', 'excerpt', 'image', 'published_at', 'reading_time', 'view_count'])
@@ -109,12 +203,14 @@ class ArticleRepository
     }
 
     /**
-     * Get popular articles (by view count)
+     * Get popular articles with taxonomy support
      */
     public function getPopular(int $limit = 10): Collection
     {
-        return Cache::remember('popular_articles', 3600, function () use ($limit) {
-            return $this->model->with(['tags:id,name,slug,color'])
+        return Cache::remember('popular_articles_taxonomy', 3600, function () use ($limit) {
+            return $this->model->with(['taxonomies' => function ($query) {
+                    $query->select(['id', 'name', 'slug', 'type', 'meta']);
+                }])
                 ->published()
                 ->whereNull('deleted_at')
                 ->select(['id', 'title', 'slug', 'excerpt', 'image', 'published_at', 'reading_time', 'view_count'])
@@ -125,33 +221,35 @@ class ArticleRepository
     }
 
     /**
-     * Find article by slug
+     * Find article by slug with taxonomy support
      */
     public function findBySlug(string $slug): ?Article
     {
-        return $this->model->with(['tags:id,name,slug,color'])
+        return $this->model->with(['taxonomies' => function ($query) {
+                $query->select(['id', 'name', 'slug', 'type', 'meta']);
+            }])
             ->where('slug', $slug)
             ->published()
             ->first();
     }
 
     /**
-     * Get related articles based on tags
+     * Get related articles based on taxonomies
      */
     public function getRelated(Article $article, int $limit = 6): Collection
     {
-        $tagIds = $article->tags->pluck('id')->toArray();
+        $taxonomyIds = $article->taxonomies->pluck('id')->toArray();
 
-        if (empty($tagIds)) {
+        if (empty($taxonomyIds)) {
             return $this->getLatest($limit);
         }
 
-        return $this->model->with(['tags:id,name,slug,color'])
+        return $this->model->with(['taxonomies' => function ($query) {
+                $query->select(['id', 'name', 'slug', 'type', 'meta']);
+            }])
             ->published()
             ->whereNull('deleted_at')
-            ->whereHas('tags', function ($query) use ($tagIds) {
-                $query->whereIn('tags.id', $tagIds);
-            })
+            ->withAnyTaxonomies($taxonomyIds)
             ->where('id', '!=', $article->id)
             ->select(['id', 'title', 'slug', 'excerpt', 'image', 'published_at', 'reading_time', 'view_count'])
             ->latest('published_at')
@@ -160,17 +258,82 @@ class ArticleRepository
     }
 
     /**
-     * Search articles
+     * Search articles with taxonomy support
      */
     public function search(string $term, int $perPage = 12): LengthAwarePaginator
     {
-        return $this->model->with(['tags:id,name,slug,color'])
+        return $this->model->with(['taxonomies' => function ($query) {
+                $query->select(['id', 'name', 'slug', 'type', 'meta']);
+            }])
             ->published()
             ->whereNull('deleted_at')
             ->search($term)
             ->select(['id', 'title', 'slug', 'excerpt', 'image', 'published_at', 'reading_time', 'view_count'])
             ->latest('published_at')
             ->paginate($perPage);
+    }
+
+    /**
+     * Get articles by taxonomy type
+     */
+    public function getByTaxonomyType(string $type, int $perPage = 12): LengthAwarePaginator
+    {
+        return $this->model->with(['taxonomies' => function ($query) {
+                $query->select(['id', 'name', 'slug', 'type', 'meta']);
+            }])
+            ->published()
+            ->whereNull('deleted_at')
+            ->withTaxonomyType($type)
+            ->select(['id', 'title', 'slug', 'excerpt', 'image', 'published_at', 'reading_time', 'view_count'])
+            ->latest('published_at')
+            ->paginate($perPage);
+    }
+
+    /**
+     * Get articles with hierarchical taxonomy filtering
+     */
+    public function getByTaxonomyHierarchy(int $parentTaxonomyId, int $perPage = 12): LengthAwarePaginator
+    {
+        return $this->model->with(['taxonomies' => function ($query) {
+                $query->select(['id', 'name', 'slug', 'type', 'meta']);
+            }])
+            ->published()
+            ->whereNull('deleted_at')
+            ->withTaxonomyHierarchy($parentTaxonomyId)
+            ->select(['id', 'title', 'slug', 'excerpt', 'image', 'published_at', 'reading_time', 'view_count'])
+            ->latest('published_at')
+            ->paginate($perPage);
+    }
+
+    /**
+     * Attach taxonomies to article
+     */
+    public function attachTaxonomies(Article $article, array $taxonomyIds): void
+    {
+        $article->attachTaxonomies($taxonomyIds);
+        $this->clearCache();
+    }
+
+    /**
+     * Sync taxonomies with article
+     */
+    public function syncTaxonomies(Article $article, array $taxonomyIds): void
+    {
+        $article->syncTaxonomies($taxonomyIds);
+        $this->clearCache();
+    }
+
+    /**
+     * Detach taxonomies from article
+     */
+    public function detachTaxonomies(Article $article, array $taxonomyIds = null): void
+    {
+        if ($taxonomyIds) {
+            $article->detachTaxonomies($taxonomyIds);
+        } else {
+            $article->detachTaxonomies();
+        }
+        $this->clearCache();
     }
 
     /**
@@ -210,7 +373,9 @@ class ArticleRepository
      */
     public function incrementViews(Article $article): bool
     {
-        return $article->increment('view_count');
+        // Use the model's raw SQL method to avoid triggering model events
+        // which cause MySQL stored function/trigger conflicts
+        return $article->incrementViews();
     }
 
     /**

@@ -8,7 +8,7 @@
         <h1 class="text-4xl font-bold tracking-tight text-gray-900 dark:text-white mb-4">{{ $category->title }}</h1>
         <p class="text-gray-600 dark:text-gray-300">{{ $category->description }}</p>
     </div>
-    <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mb-6">{{ __('Articles in this Section') }}</h2>
+    <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mb-6">Articles in this Section</h2>
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         @foreach($posts as $article)
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-lg transition-shadow flex flex-col h-full">
@@ -18,7 +18,7 @@
                 </div>
                 <div class="p-6 pt-0">
                     <a href="{{ route('news.show', $article->slug) }}">
-                        <x-button variant="primary">{{ __('Read More') }}</x-button>
+                        <x-button variant="primary">Read More</x-button>
                     </a>
                 </div>
             </div>

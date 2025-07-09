@@ -1,22 +1,34 @@
-<a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 bg-indigo-700 text-white px-4 py-2 rounded z-50">{{ __('Skip to main content') }}</a>
-<main id="main-content" tabindex="-1" class="container mx-auto py-12 relative overflow-hidden">
-    <!-- SVG Gradient Background -->
-    <svg class="absolute inset-0 w-full h-full pointer-events-none" aria-hidden="true" focusable="false">
-        <defs>
-            <linearGradient id="about-hero-gradient" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stop-color="#818cf8" stop-opacity="0.13" />
-                <stop offset="100%" stop-color="#f472b6" stop-opacity="0.10" />
-            </linearGradient>
-            <linearGradient id="about-hero-gradient-dark" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stop-color="#a5b4fc" stop-opacity="0.18" />
-                <stop offset="100%" stop-color="#f9a8d4" stop-opacity="0.13" />
-            </linearGradient>
-        </defs>
-        <rect width="100%" height="100%" fill="url(#about-hero-gradient)" class="block dark:hidden" />
-        <rect width="100%" height="100%" fill="url(#about-hero-gradient-dark)" class="hidden dark:block" />
-    </svg>
-    <section class="relative prose prose-lg max-w-none dark:prose-invert prose-indigo">
-                        <h1 class="text-3xl font-bold mb-4 text-gray-900 dark:text-white">About</h1>
-                <p class="text-lg text-gray-700 dark:text-gray-300">This is the about page.</p>
-    </section>
-</main> 
+@extends('layouts.app')
+
+@section('title', 'About Us')
+@section('description', 'Learn more about our news portal and our mission to bring you the latest news and insights.')
+
+@section('content')
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div class="text-center mb-12">
+        <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">About Our News Portal</h1>
+        <p class="text-xl text-gray-600 dark:text-gray-300">Bringing you the latest news and insights from around the world</p>
+    </div>
+
+    <div class="prose prose-lg max-w-none dark:prose-invert">
+        <p>Welcome to our news portal, your trusted source for comprehensive news coverage, in-depth analysis, and timely updates from around the globe.</p>
+        
+        <h2>Our Mission</h2>
+        <p>We are committed to delivering accurate, unbiased, and timely news coverage across a wide range of topics including technology, business, health, science, sports, and entertainment.</p>
+        
+        <h2>What We Offer</h2>
+        <ul>
+            <li>Breaking news and live updates</li>
+            <li>In-depth analysis and expert commentary</li>
+            <li>Comprehensive coverage across multiple categories</li>
+            <li>User-friendly interface with advanced search capabilities</li>
+        </ul>
+        
+        <h2>Our Team</h2>
+        <p>Our dedicated team of journalists and editors work around the clock to ensure you receive the most accurate and up-to-date information.</p>
+        
+        <h2>Contact Us</h2>
+        <p>Have questions or feedback? We'd love to hear from you. Visit our <a href="{{ route('contact') }}" class="text-indigo-600 hover:text-indigo-500">contact page</a> to get in touch.</p>
+    </div>
+</div>
+@endsection 

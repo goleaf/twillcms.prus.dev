@@ -17,10 +17,10 @@
                             <a href="{{ route('admin.dashboard') }}">Admin Panel</a>
                         </h1>
                         <div class="hidden md:flex space-x-4">
-                            <a href="/admin/articles" class="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium">{{ __('Articles') }}</a>
-                            <a href="/admin/tags" class="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium">{{ __('Tags') }}</a>
-                            <a href="/admin/statistics" class="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium">{{ __('Statistics') }}</a>
-                            <a href="/admin/analytics" class="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium">{{ __('Analytics') }}</a>
+                            <a href="/admin/articles" class="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium">Articles</a>
+                            <a href="/admin/tags" class="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium">Tags</a>
+                            <a href="/admin/categories" class="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium">Categories</a>
+                            <a href="/admin/statistics" class="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium">Statistics</a>
                         </div>
                     </div>
                     <div class="flex items-center space-x-4">

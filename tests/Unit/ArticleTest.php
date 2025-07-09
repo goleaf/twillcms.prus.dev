@@ -22,12 +22,16 @@ class ArticleTest extends TestCase
     #[Test]
     public function article_can_have_tags(): void
     {
+        // Use fresh instances and clear any cache
+        \Cache::flush();
+        
         $article = Article::factory()->create();
         $tag = Tag::factory()->create();
 
         $article->tags()->attach($tag);
 
         $this->assertTrue($article->tags->contains($tag));
+        $this->assertEquals(1, $article->tags->count());
     }
 
     #[Test]
@@ -90,7 +94,9 @@ class ArticleTest extends TestCase
 
         $searchResults = Article::search('Test')->get();
 
-        $this->assertTrue($searchResults->contains($article));
+        // Debug output
+        $this->assertTrue($searchResults->count() > 0, 'Search results should not be empty');
+        $this->assertTrue($searchResults->contains($article), 'Search results should contain the article');
     }
 
     #[Test]
@@ -110,23 +116,39 @@ class ArticleTest extends TestCase
     {
         $tag = Tag::factory()->create();
         $article = Article::factory()->create(['is_published' => true]);
-        $relatedArticle = Article::factory()->create(['is_published' => true]);
-
+        
+        // Create 6 related articles to match the test expectation
+        $relatedArticles = Article::factory()->count(6)->create(['is_published' => true]);
+        
+        // Attach the tag to the main article
         $article->tags()->attach($tag);
-        $relatedArticle->tags()->attach($tag);
+        
+        // Attach the tag to all related articles
+        foreach ($relatedArticles as $relatedArticle) {
+            $relatedArticle->tags()->attach($tag);
+        }
 
         $related = $article->getRelated();
         $this->assertCount(6, $related);
 
-        $this->assertTrue($related->contains($relatedArticle));
+        // Check that all related articles are in the results
+        foreach ($relatedArticles as $relatedArticle) {
+            $this->assertTrue($related->contains($relatedArticle));
+        }
+        
+        // Check that the main article is not in the results
         $this->assertFalse($related->contains($article));
     }
 
     #[Test]
     public function article_reading_time_is_calculated(): void
     {
+        // Create exactly 1000 words for the test
+        $words = array_fill(0, 1000, 'word');
+        $content = implode(' ', $words); // This creates exactly 1000 words
+        
         $article = Article::factory()->create([
-            'content' => str_repeat('word ', 1000), // 1000 words
+            'content' => $content,
         ]);
 
         $this->assertEquals(5, $article->reading_time); // 1000 words / 200 words per minute = 5 minutes

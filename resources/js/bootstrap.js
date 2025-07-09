@@ -1,47 +1,24 @@
 import axios from 'axios';
 
-// Set up axios defaults
+// Set up axios defaults for Laravel Blade forms
 axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 axios.defaults.headers.common['Accept'] = 'application/json';
 axios.defaults.headers.common['Content-Type'] = 'application/json';
 
-// Add CSRF token if available
+// Add CSRF token for Laravel forms
 const token = document.head.querySelector('meta[name="csrf-token"]');
 if (token) {
     axios.defaults.headers.common['X-CSRF-TOKEN'] = token.getAttribute('content');
 }
 
-// Add auth token if available
-const authToken = localStorage.getItem('auth_token');
-if (authToken) {
-    axios.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
-}
-
-// Request interceptor
-axios.interceptors.request.use(
-    (config) => {
-        const token = localStorage.getItem('auth_token');
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-        }
-        return config;
-    },
-    (error) => {
-        return Promise.reject(error);
-    }
-);
-
-// Response interceptor
+// Simple response interceptor for form submissions
 axios.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response?.status === 401) {
-            localStorage.removeItem('auth_token');
-            window.location.href = '/login';
-        }
+        console.error('Request failed:', error);
         return Promise.reject(error);
     }
 );
 
-// Make axios available globally
+// Make axios available globally for form submissions
 window.axios = axios;

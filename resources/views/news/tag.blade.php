@@ -19,13 +19,13 @@
                         <div class="flex-1">
                             <div class="flex space-x-2">
                                 @foreach($article->tags as $articleTag)
-                                <a href="{{ route('tag.show', $articleTag) }}" 
+                                <a href="{{ route('tags.show', $articleTag->slug) }}" 
                                    class="inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium {{ $articleTag->id === $tag->id ? 'bg-indigo-600 text-white' : 'bg-indigo-100 text-indigo-800' }}">
                                     {{ $articleTag->name }}
                                 </a>
                                 @endforeach
                             </div>
-                            <a href="{{ route('article.show', $article) }}" class="block mt-2">
+                            <a href="{{ route('news.show', $article->slug) }}" class="block mt-2">
                                 <p class="text-xl font-semibold text-gray-900">{{ $article->title }}</p>
                                 <p class="mt-3 text-base text-gray-500">{{ $article->excerpt }}</p>
                             </a>

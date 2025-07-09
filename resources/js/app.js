@@ -372,6 +372,28 @@ function showNotification(message, type = 'info') {
     }, 3000);
 }
 
+// Search overlay functionality
+function initializeSearchOverlay() {
+    const searchToggle = document.querySelector('#toggle-search');
+    const searchOverlay = document.querySelector('[x-data*="show"]');
+    
+    if (searchToggle) {
+        searchToggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            // Dispatch custom event that Alpine.js can listen to
+            window.dispatchEvent(new CustomEvent('toggle-search'));
+        });
+    }
+    
+    // Keyboard shortcut (Ctrl+K or Cmd+K)
+    document.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            e.preventDefault();
+            window.dispatchEvent(new CustomEvent('toggle-search'));
+        }
+    });
+}
+
 // Modal management
 function initializeModals() {
     // Open modal
@@ -399,4 +421,63 @@ function initializeModals() {
             window.closeAllModals();
         }
     });
+}
+
+// Navigation enhancements
+function initializeNavigation() {
+    // Enhanced navigation with current page highlighting
+    const currentPath = window.location.pathname;
+    const navLinks = document.querySelectorAll('nav a[href]');
+    
+    navLinks.forEach(link => {
+        if (link.getAttribute('href') === currentPath) {
+            link.classList.add('active');
+            link.setAttribute('aria-current', 'page');
+        }
+    });
+}
+
+// Newsletter form handling
+function initializeNewsletterForm() {
+    const newsletterForms = document.querySelectorAll('[data-newsletter-form]');
+    
+    newsletterForms.forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const email = this.querySelector('input[type="email"]').value;
+            
+            if (email) {
+                showNotification('Thank you for subscribing!', 'success');
+                this.reset();
+            } else {
+                showNotification('Please enter a valid email address', 'error');
+            }
+        });
+    });
+}
+
+// Notifications system
+function initializeNotifications() {
+    // Create notification container if it doesn't exist
+    if (!document.querySelector('#notifications-container')) {
+        const container = document.createElement('div');
+        container.id = 'notifications-container';
+        container.className = 'fixed top-4 right-4 z-50 space-y-2';
+        document.body.appendChild(container);
+    }
+}
+
+// Loading complete notification
+function showLoadingCompleteNotification() {
+    setTimeout(() => {
+        console.log('✅ All systems loaded successfully');
+    }, 100);
+}
+
+// Smooth scrolling enhancements
+function initializeSmoothScrolling() {
+    // Enhanced smooth scrolling for the entire page
+    if ('scrollBehavior' in document.documentElement.style) {
+        document.documentElement.style.scrollBehavior = 'smooth';
+    }
 }

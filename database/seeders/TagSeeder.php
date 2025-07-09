@@ -17,7 +17,7 @@ class TagSeeder extends Seeder
             ['name' => 'PHP', 'slug' => 'php'],
             ['name' => 'Web Development', 'slug' => 'web-development'],
             ['name' => 'JavaScript', 'slug' => 'javascript'],
-            ['name' => 'Vue.js', 'slug' => 'vuejs'],
+            ['name' => 'React', 'slug' => 'react'],
             ['name' => 'Database', 'slug' => 'database'],
             ['name' => 'API', 'slug' => 'api'],
             ['name' => 'Frontend', 'slug' => 'frontend'],

@@ -7,10 +7,14 @@ use App\Http\Requests\StoreArticleRequest;
 use App\Http\Requests\UpdateArticleRequest;
 use App\Http\Requests\StoreTagRequest;
 use App\Http\Requests\UpdateTagRequest;
+use App\Http\Requests\StoreCategoryRequest;
+use App\Http\Requests\UpdateCategoryRequest;
 use App\Models\Article;
 use App\Models\Tag;
+use App\Models\Category;
 use App\Repositories\ArticleRepository;
 use App\Repositories\TagRepository;
+use App\Repositories\CategoryRepository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -18,11 +22,13 @@ class AdminController extends Controller
 {
     protected ArticleRepository $articleRepository;
     protected TagRepository $tagRepository;
+    protected CategoryRepository $categoryRepository;
 
-    public function __construct(ArticleRepository $articleRepository, TagRepository $tagRepository)
+    public function __construct(ArticleRepository $articleRepository, TagRepository $tagRepository, CategoryRepository $categoryRepository)
     {
         $this->articleRepository = $articleRepository;
         $this->tagRepository = $tagRepository;
+        $this->categoryRepository = $categoryRepository;
     }
 
     // Dashboard
@@ -190,6 +196,90 @@ class AdminController extends Controller
         $tag = $this->tagRepository->getModel()->findOrFail($id);
         $tag->forceDelete();
         return redirect()->route('admin.tags.index')->with('success', __('Tag deleted successfully.'));
+    }
+
+    // Categories Management
+    public function categories(Request $request)
+    {
+        $filters = [
+            'search' => $request->query('search'),
+            'active' => $request->query('active'),
+        ];
+
+        $categories = $this->categoryRepository->getAllPaginated(20, $filters);
+
+        return view('admin.categories.index', compact('categories'));
+    }
+
+    public function createCategory()
+    {
+        return view('admin.categories.create');
+    }
+
+    public function storeCategory(StoreCategoryRequest $request)
+    {
+        $data = $request->validated();
+        $category = $this->categoryRepository->create($data);
+        
+        return redirect()->route('admin.categories.index')->with('success', 'Category created successfully.');
+    }
+
+    public function showCategory($id)
+    {
+        $category = $this->categoryRepository->findById($id);
+        return view('admin.categories.show', compact('category'));
+    }
+
+    public function editCategory($id)
+    {
+        $category = $this->categoryRepository->findById($id);
+        $categories = $this->categoryRepository->getAll(); // For parent selection
+        return view('admin.categories.edit', compact('category', 'categories'));
+    }
+
+    public function updateCategory(UpdateCategoryRequest $request, $id)
+    {
+        $data = $request->validated();
+        $category = $this->categoryRepository->update($id, $data);
+        
+        return redirect()->route('admin.categories.index')->with('success', 'Category updated successfully.');
+    }
+
+    public function destroyCategory($id)
+    {
+        $category = $this->categoryRepository->findById($id);
+        $this->categoryRepository->delete($id);
+        
+        return redirect()->route('admin.categories.index')->with('success', __('Category deleted successfully.'));
+    }
+
+    public function bulkActionCategories(Request $request)
+    {
+        $action = $request->input('action');
+        $categoryIds = $request->input('categories', []);
+
+        if (empty($categoryIds)) {
+            return back()->with('error', __('No categories selected.'));
+        }
+
+        switch ($action) {
+            case 'activate':
+                Category::whereIn('id', $categoryIds)->update(['is_active' => true]);
+                $message = __('Selected categories have been activated.');
+                break;
+            case 'deactivate':
+                Category::whereIn('id', $categoryIds)->update(['is_active' => false]);
+                $message = __('Selected categories have been deactivated.');
+                break;
+            case 'delete':
+                Category::whereIn('id', $categoryIds)->delete();
+                $message = __('Selected categories have been deleted.');
+                break;
+            default:
+                return back()->with('error', __('Invalid action selected.'));
+        }
+
+        return back()->with('success', $message);
     }
 
     // Statistics

@@ -36,13 +36,13 @@ class AppServiceProvider extends ServiceProvider
         // Simple routing configuration
         Route::pattern('id', '[0-9]+');
 
-        // API route model binding
-        Route::bind('post', function ($value) {
-            return Post::where('id', $value)->orWhere('slug', $value)->firstOrFail();
+        // Route model binding
+        Route::bind('article', function ($value) {
+            return \App\Models\Article::where('id', $value)->orWhere('slug', $value)->firstOrFail();
         });
 
         Route::bind('category', function ($value) {
-            return Category::where('id', $value)->orWhere('slug', $value)->firstOrFail();
+            return \App\Models\Category::where('id', $value)->orWhere('slug', $value)->firstOrFail();
         });
 
         // Use Bootstrap pagination views

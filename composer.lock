@@ -4,8 +4,89 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "3ed41a126009226b8b5f7c2c4d3cf729",
+    "content-hash": "eec0637c280d311dab823a840bf4a65c",
     "packages": [
+        {
+            "name": "aliziodev/laravel-taxonomy",
+            "version": "v2.4.7",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/aliziodev/laravel-taxonomy.git",
+                "reference": "cd924b6896a96733d83b39ff3b769ebee14c293a"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/aliziodev/laravel-taxonomy/zipball/cd924b6896a96733d83b39ff3b769ebee14c293a",
+                "reference": "cd924b6896a96733d83b39ff3b769ebee14c293a",
+                "shasum": ""
+            },
+            "require": {
+                "illuminate/contracts": "^11.0|^12.0",
+                "illuminate/database": "^11.0|^12.0",
+                "illuminate/support": "^11.0|^12.0",
+                "laravel/framework": "^11.0|^12.0",
+                "php": "^8.2"
+            },
+            "require-dev": {
+                "larastan/larastan": "^3.4",
+                "laravel/pint": "^1.22",
+                "orchestra/testbench": "^9.0|^10.0",
+                "pestphp/pest": "^3.8.2",
+                "pestphp/pest-plugin-laravel": "^3.2.0",
+                "phpstan/phpstan": "^2.1"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "aliases": {
+                        "Taxonomy": "Aliziodev\\LaravelTaxonomy\\Facades\\Taxonomy"
+                    },
+                    "providers": [
+                        "Aliziodev\\LaravelTaxonomy\\TaxonomyProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Aliziodev\\LaravelTaxonomy\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Alizio",
+                    "email": "aliziodev@gmail.com"
+                }
+            ],
+            "description": "Laravel Taxonomy is a flexible and powerful package for managing taxonomies, categories, tags, and hierarchical structures in Laravel applications. Features nested-set support for optimal query performance on hierarchical data structures.",
+            "keywords": [
+                "categories",
+                "closure-table",
+                "hierarchical",
+                "hierarchical-data",
+                "laravel",
+                "laravel-terms",
+                "nested-set",
+                "tags",
+                "taxonomy",
+                "terms",
+                "tree-structure"
+            ],
+            "support": {
+                "issues": "https://github.com/aliziodev/laravel-taxonomy/issues",
+                "source": "https://github.com/aliziodev/laravel-taxonomy/tree/v2.4.7"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/aliziodev",
+                    "type": "github"
+                }
+            ],
+            "time": "2025-07-03T23:45:04+00:00"
+        },
         {
             "name": "brick/math",
             "version": "0.12.3",

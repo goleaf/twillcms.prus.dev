@@ -201,7 +201,7 @@ class FrontendRoutesTest extends TestCase
         $article = Article::factory()->create();
         $tag->articles()->attach($article);
         
-        $response = $this->get("/tag/{$tag->slug}");
+        $response = $this->get("/tags/{$tag->slug}");
         
         $response->assertStatus(200);
         $response->assertViewIs('news.tags.show');
@@ -215,7 +215,7 @@ class FrontendRoutesTest extends TestCase
         $article = Article::factory()->create();
         $tag->articles()->attach($article);
         
-        $response = $this->get("/tag/{$tag->slug}");
+        $response = $this->get("/tags/{$tag->slug}");
         
         $response->assertStatus(200);
         $response->assertSee($article->title);
@@ -227,7 +227,7 @@ class FrontendRoutesTest extends TestCase
         $tag = Tag::factory()->create();
         $relatedTag = Tag::factory()->create();
         
-        $response = $this->get("/tag/{$tag->slug}");
+        $response = $this->get("/tags/{$tag->slug}");
         
         $response->assertStatus(200);
         $response->assertSee('Related Topics');
@@ -236,7 +236,7 @@ class FrontendRoutesTest extends TestCase
     /** @test */
     public function nonexistent_tag_returns_404()
     {
-        $response = $this->get('/tag/nonexistent-tag');
+        $response = $this->get('/tags/nonexistent-tag');
         
         $response->assertStatus(404);
     }
@@ -391,7 +391,7 @@ class FrontendRoutesTest extends TestCase
         $articles = Article::factory()->count(25)->create();
         $tag->articles()->attach($articles);
         
-        $response = $this->get("/tag/{$tag->slug}");
+        $response = $this->get("/tags/{$tag->slug}");
         
         $response->assertStatus(200);
         // Check for pagination elements

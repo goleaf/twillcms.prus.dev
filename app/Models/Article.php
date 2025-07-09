@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Aliziodev\LaravelTaxonomy\Traits\HasTaxonomy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,10 +12,11 @@ use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
 
 class Article extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, HasTaxonomy;
 
     protected $fillable = [
         'title',
@@ -162,8 +164,9 @@ class Article extends Model
     public function scopeSearch(Builder $query, string $term): Builder
     {
         return $query->where(function ($query) use ($term) {
-            $query->whereFullText(['title', 'excerpt'], $term, ['mode' => 'boolean'])
-                ->orWhereFullText(['title', 'excerpt', 'content'], $term, ['mode' => 'boolean'])
+            $query->where('title', 'like', "%{$term}%")
+                ->orWhere('excerpt', 'like', "%{$term}%")
+                ->orWhere('content', 'like', "%{$term}%")
                 ->orWhereHas('tags', function ($query) use ($term) {
                     $query->where('name', 'like', "%{$term}%");
                 });
@@ -190,6 +193,20 @@ class Article extends Model
     public function scopeExcept(Builder $query, int $articleId): Builder
     {
         return $query->where('id', '!=', $articleId);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Static Methods for Testing
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Static search method for tests
+     */
+    public static function search(string $term)
+    {
+        return static::query()->search($term);
     }
 
     /*
@@ -243,11 +260,16 @@ class Article extends Model
 
     /**
      * Increment view count efficiently
+     * Uses raw SQL to avoid model events and MySQL trigger conflicts
      */
     public function incrementViews(): bool
     {
-        // Use raw SQL for performance - no model events triggered
-        return (bool) static::where('id', $this->id)->increment('view_count');
+        // Use raw SQL with DB::update for maximum performance and to avoid
+        // any model events that could trigger MySQL stored function conflicts
+        return (bool) DB::update(
+            'UPDATE articles SET view_count = view_count + 1 WHERE id = ? AND deleted_at IS NULL',
+            [$this->id]
+        );
     }
 
     /**

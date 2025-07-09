@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Aliziodev\LaravelTaxonomy\Traits\HasTaxonomy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -13,7 +14,7 @@ use Illuminate\Support\Facades\Cache;
 
 class Tag extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, HasTaxonomy;
 
     protected $fillable = [
         'name',

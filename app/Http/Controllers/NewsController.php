@@ -4,12 +4,20 @@ namespace App\Http\Controllers;
 
 use App\Models\Article;
 use App\Models\Tag;
+use App\Repositories\ArticleRepository;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Database\Eloquent\Builder;
 
 class NewsController extends Controller
 {
+    protected ArticleRepository $articleRepository;
+
+    public function __construct(ArticleRepository $articleRepository)
+    {
+        $this->articleRepository = $articleRepository;
+    }
+
     /**
      * Display a listing of news articles
      */
@@ -52,8 +60,8 @@ class NewsController extends Controller
             abort(404);
         }
 
-        // Increment view count
-        $article->incrementViews();
+        // Increment view count using repository (consistent with HomeController)
+        $this->articleRepository->incrementViews($article);
 
         // Get related articles
         $relatedArticles = $article->getRelated(3);
